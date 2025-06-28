@@ -2,6 +2,7 @@ package com.medical.qna.medical_qna_system.model;
 
 import jakarta.persistence.*;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user")
@@ -18,7 +19,12 @@ public class User implements Serializable {
     @Column(nullable = false)
     private String passWord;
 
-    // 可扩展更多字段，如邮箱、手机号、注册时间等
+    @Column(nullable = false, unique = true, length = 50)
+    private String email;
+
+    @Column(nullable = false)
+    private LocalDateTime registerTime;
+
 
     public Long getId() {
         return id;
@@ -44,12 +50,30 @@ public class User implements Serializable {
         this.passWord = passWord;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public LocalDateTime getRegisterTime() {
+        return registerTime;
+    }
+
+    public void setRegisterTime(LocalDateTime registerTime) {
+        this.registerTime = registerTime;
+    }
+
     @Override
     public String toString() {
         return "User{" +
                 "id=" + id +
                 ", userName='" + userName + '\'' +
                 ", passWord='" + passWord + '\'' +
+                ", email='" + email + '\'' +
+                ", registerTime=" + registerTime +
                 '}';
     }
 }
