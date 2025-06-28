@@ -27,6 +27,10 @@ public class Answer implements Serializable {
 
     // 可扩展：回答来源、置信度等
 
+    @ManyToOne
+    @JoinColumn(name = "question_id", nullable = false)
+    private Question question;
+
     public Long getId() {
         return id;
     }
@@ -57,6 +61,14 @@ public class Answer implements Serializable {
 
     public void setAnswerTime(LocalDateTime answerTime) {
         this.answerTime = answerTime;
+    }
+
+    public Question getQuestion() {
+        return question;
+    }
+
+    public void setQuestion(Question question) {
+        this.question = question;
     }
 
     @Override

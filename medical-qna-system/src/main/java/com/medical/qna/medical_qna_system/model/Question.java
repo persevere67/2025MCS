@@ -25,7 +25,10 @@ public class Question implements Serializable {
     @Column(nullable = false)
     private LocalDateTime createTime;
 
-    // 可扩展：问题状态、标签等
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     public Long getId() {
         return id;
@@ -57,6 +60,14 @@ public class Question implements Serializable {
 
     public void setCreateTime(LocalDateTime createTime) {
         this.createTime = createTime;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     @Override
