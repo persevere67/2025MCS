@@ -1,19 +1,31 @@
 package com.medical.qna.medical_qna_system;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
+// 使用 @Service 注解，让 Spring 能够管理这个类
+@Service
 public class DeepSeekClient {
 
-    // DeepSeek API Key 建议放到配置文件或环境变量
-    private static final String API_KEY = "sk-e40b773f247748f1b4d5d831cb3a8987";
+    // 使用 @Value 注解从 application.properties 文件中读取配置
+    @Value("${deepseek.api.key}")
+    private String apiKey;
+
     private static final String API_URL = "https://api.deepseek.com/v1/chat/completions";
 
-    public static String ask(String question) throws Exception {
+    public String ask(String question) throws Exception {
+        // 检查 API Key 是否成功注入
+        if (apiKey == null || apiKey.isEmpty()) {
+            throw new IllegalStateException("DeepSeek API Key is not configured in application.properties.");
+        }
+
         JSONObject requestBody = new JSONObject();
         requestBody.put("model", "deepseek-chat");
 
@@ -30,7 +42,7 @@ public class DeepSeekClient {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(API_URL))
                 .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + API_KEY)
+                .header("Authorization", "Bearer " + apiKey) // 使用注入的 apiKey
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
                 .build();
 
@@ -42,13 +54,5 @@ public class DeepSeekClient {
                 .getJSONObject(0)
                 .getJSONObject("message")
                 .getString("content");
-    }
-
-    // 测试用 main 方法
-    public static void main(String[] args) throws Exception {
-        String question = "感冒应该吃什么药？";
-        String answer = ask(question);
-        System.out.println("DeepSeek 回答：");
-        System.out.println(answer);
     }
 }
