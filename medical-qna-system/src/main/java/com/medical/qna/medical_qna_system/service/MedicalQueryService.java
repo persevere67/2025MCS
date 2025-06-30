@@ -1,241 +1,157 @@
 package com.medical.qna.medical_qna_system.service;
 
+import com.medical.qna.medical_qna_system.dto.DiseaseInfoDto;
 import com.medical.qna.medical_qna_system.entity.neo4j.Disease;
+import com.medical.qna.medical_qna_system.entity.neo4j.Symptom;
 import com.medical.qna.medical_qna_system.repository.neo4j.MedicalKnowledgeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class MedicalQueryService {
-    
-    @Autowired
-    private MedicalKnowledgeRepository medicalRepository;
-    
-    public String queryMedicalKnowledge(String question) {
-        StringBuilder answer = new StringBuilder();
-        
-        try {
-            // 分析问题类型并调用相应的查询方法
-            if (isSymptomQuery(question)) {
-                answer.append(handleSymptomQuery(question));
-            } else if (isDiseaseInfoQuery(question)) {
-                answer.append(handleDiseaseInfoQuery(question));
-            } else if (isTreatmentQuery(question)) {
-                answer.append(handleTreatmentQuery(question));
-            } else if (isFoodQuery(question)) {
-                answer.append(handleFoodQuery(question));
-            } else if (isDepartmentQuery(question)) {
-                answer.append(handleDepartmentQuery(question));
-            } else {
-                // 通用关键词查询
-                answer.append(handleGeneralQuery(question));
-            }
-            
-        } catch (Exception e) {
-            return "查询过程中出现错误，请稍后重试。";
+  
+    private final MedicalKnowledgeRepository knowledgeRepository;
+  
+    // 症状关键词库
+    private static final List<String> SYMPTOM_KEYWORDS = Arrays.asList(
+        "发热", "发烧", "头痛", "头疼", "咳嗽", "胸痛", "腹痛", "肚子痛", 
+        "恶心", "呕吐", "腹泻", "拉肚子", "便秘", "乏力", "疲劳", "头晕", 
+        "眩晕", "失眠", "食欲不振", "体重减轻", "皮疹", "瘙痒", "关节痛", 
+        "肌肉痛", "心悸", "气短", "呼吸困难", "胸闷", "咽痛", "喉咙痛",
+        "鼻塞", "流鼻涕", "打喷嚏", "耳鸣", "听力下降", "视力模糊",
+        "尿频", "尿急", "尿痛", "血尿", "便血", "黄疸", "水肿", "浮肿"
+    );
+  
+    public List<Disease> findDiseasesByQuestion(String question) {
+        // 提取症状
+        List<String> symptoms = extractSymptoms(question);
+      
+        if (symptoms.isEmpty()) {
+            // 如果没有识别出症状，尝试通过关键词搜索疾病
+            return searchDiseasesByKeywords(question);
         }
-        
-        return answer.length() > 0 ? answer.toString() : "抱歉，没有找到相关的医疗信息。";
+      
+        // 通过症状查找疾病
+        return knowledgeRepository.findDiseasesBySymptoms(symptoms);
     }
-    
-    private boolean isSymptomQuery(String question) {
-        return question.contains("症状") || question.contains("表现") || 
-               question.contains("什么病") || question.contains("哪些病");
-    }
-    
-    private boolean isDiseaseInfoQuery(String question) {
-        return question.contains("什么是") || question.contains("介绍") || 
-               question.contains("简介") || question.contains("是什么");
-    }
-    
-    private boolean isTreatmentQuery(String question) {
-        return question.contains("治疗") || question.contains("怎么治") || 
-               question.contains("如何治疗") || question.contains("治疗方法");
-    }
-    
-    private boolean isFoodQuery(String question) {
-        return question.contains("吃什么") || question.contains("食物") || 
-               question.contains("饮食") || question.contains("不能吃");
-    }
-    
-    private boolean isDepartmentQuery(String question) {
-        return question.contains("科室") || question.contains("挂号") || 
-               question.contains("哪个科") || question.contains("去哪里看");
-    }
-    
-    private String handleSymptomQuery(String question) {
-        String[] symptoms = extractKeywords(question);
-        List<String> symptomList = Arrays.stream(symptoms)
-            .filter(s -> !isStopWord(s))
-            .collect(Collectors.toList());
-        
-        if (!symptomList.isEmpty()) {
-            List<Disease> diseases = medicalRepository.findDiseasesByMultipleSymptoms(symptomList);
-            if (!diseases.isEmpty()) {
-                StringBuilder result = new StringBuilder("根据您描述的症状，可能的疾病包括：\n");
-                for (Disease disease : diseases) {
-                    result.append("• ").append(disease.getName());
-                    if (disease.getDesc() != null && !disease.getDesc().isEmpty()) {
-                        result.append("：").append(disease.getDesc());
-                    }
-                    result.append("\n");
-                }
-                result.append("\n建议您及时就医确诊。");
-                return result.toString();
-            }
+  
+    public DiseaseInfoDto getDiseaseInfo(String diseaseName) {
+        Optional<Disease> diseaseOpt = knowledgeRepository.findByName(diseaseName);
+        if (diseaseOpt.isEmpty()) {
+            return null;
         }
-        return "";
+      
+        Disease disease = diseaseOpt.get();
+        DiseaseInfoDto dto = new DiseaseInfoDto();
+      
+        // 基本信息
+        dto.setName(disease.getName());
+        dto.setDescription(disease.getDesc());
+        dto.setInsuranceCovered(disease.getInsuranceCovered());
+        dto.setTreatmentDuration(disease.getTreatmentDuration());
+        dto.setCureRate(disease.getCureRate());
+        dto.setTreatmentCost(disease.getTreatmentCost());
+        dto.setNursing(disease.getNursing());
+      
+        // 症状
+        List<Symptom> symptoms = knowledgeRepository.findSymptomsByDisease(diseaseName);
+        dto.setSymptoms(symptoms.stream().map(Symptom::getName).collect(Collectors.toList()));
+      
+        // 治疗方式
+        dto.setTreatments(knowledgeRepository.findTreatmentsByDisease(diseaseName));
+      
+        // 食物建议
+        dto.setGoodFoods(knowledgeRepository.findGoodFoodsByDisease(diseaseName));
+        dto.setBadFoods(knowledgeRepository.findBadFoodsByDisease(diseaseName));
+      
+        // 并发症
+        dto.setComplications(knowledgeRepository.findComplicationsByDisease(diseaseName));
+      
+        // 科室信息
+        List<Object> deptInfo = knowledgeRepository.findDepartmentInfoByDisease(diseaseName);
+        if (!deptInfo.isEmpty()) {
+            Map<String, String> info = (Map<String, String>) deptInfo.get(0);
+            dto.setDepartment(info.get("department"));
+            dto.setDepartmentCategory(info.get("category"));
+        }
+      
+        return dto;
     }
-    
-    private String handleDiseaseInfoQuery(String question) {
-        String[] keywords = extractKeywords(question);
-        for (String keyword : keywords) {
-            List<Disease> diseases = medicalRepository.findDiseasesByName(keyword);
-            if (!diseases.isEmpty()) {
-                Disease disease = diseases.get(0);
-                StringBuilder result = new StringBuilder();
-                result.append("关于").append(disease.getName()).append("的信息：\n");
-                
-                if (disease.getDesc() != null) {
-                    result.append("疾病简介：").append(disease.getDesc()).append("\n");
-                }
-                if (disease.getSusceptible_population() != null) {
-                    result.append("易感人群：").append(disease.getSusceptible_population()).append("\n");
-                }
-                if (disease.getPrevalence_rate() != null) {
-                    result.append("患病比例：").append(disease.getPrevalence_rate()).append("\n");
-                }
-                if (disease.getCure_rate() != null) {
-                    result.append("治愈率：").append(disease.getCure_rate()).append("\n");
-                }
-                
-                return result.toString();
+  
+    private List<String> extractSymptoms(String question) {
+        List<String> extractedSymptoms = new ArrayList<>();
+        String lowerQuestion = question.toLowerCase();
+      
+        // 使用症状关键词匹配
+        for (String symptom : SYMPTOM_KEYWORDS) {
+            if (lowerQuestion.contains(symptom)) {
+                extractedSymptoms.add(symptom);
             }
         }
-        return "";
-    }
-    
-    private String handleTreatmentQuery(String question) {
-        String[] keywords = extractKeywords(question);
-        for (String keyword : keywords) {
-            List<Disease> diseases = medicalRepository.findDiseasesByName(keyword);
-            if (!diseases.isEmpty()) {
-                Disease disease = diseases.get(0);
-                StringBuilder result = new StringBuilder();
-                result.append(disease.getName()).append("的治疗信息：\n");
-                
-                // 查询治疗方法
-                List<Object> treatments = medicalRepository.findTreatmentsByDisease(disease.getName());
-                if (!treatments.isEmpty()) {
-                    result.append("治疗方法：");
-                    treatments.forEach(treatment -> result.append(treatment.toString()).append("；"));
-                    result.append("\n");
-                }
-                
-                if (disease.getTreatment_duration() != null) {
-                    result.append("治疗周期：").append(disease.getTreatment_duration()).append("\n");
-                }
-                if (disease.getTreatment_cost() != null) {
-                    result.append("治疗费用：").append(disease.getTreatment_cost()).append("\n");
-                }
-                if (disease.getNursing() != null) {
-                    result.append("护理建议：").append(disease.getNursing()).append("\n");
-                }
-                
-                return result.toString();
+      
+        // 使用正则表达式提取更多症状模式
+        Pattern pattern = Pattern.compile("(\\S{2,4}[痛疼])|(\\S{2,4}不[适舒])");
+        Matcher matcher = pattern.matcher(question);
+        while (matcher.find()) {
+            String symptom = matcher.group();
+            if (!extractedSymptoms.contains(symptom)) {
+                extractedSymptoms.add(symptom);
             }
         }
-        return "";
+      
+        // 从Neo4j中搜索匹配的症状
+        Set<String> validSymptoms = new HashSet<>();
+        for (String symptom : extractedSymptoms) {
+            List<Symptom> searchResults = knowledgeRepository.searchSymptoms(symptom);
+            validSymptoms.addAll(searchResults.stream()
+                    .map(Symptom::getName)
+                    .collect(Collectors.toList()));
+        }
+      
+        return new ArrayList<>(validSymptoms);
     }
-    
-    private String handleFoodQuery(String question) {
-        String[] keywords = extractKeywords(question);
-        for (String keyword : keywords) {
-            List<Disease> diseases = medicalRepository.findDiseasesByName(keyword);
-            if (!diseases.isEmpty()) {
-                Disease disease = diseases.get(0);
-                StringBuilder result = new StringBuilder();
-                result.append(disease.getName()).append("的饮食建议：\n");
-                
-                // 查询有益食物
-                List<Object> goodFoods = medicalRepository.findGoodFoodsByDisease(disease.getName());
-                if (!goodFoods.isEmpty()) {
-                    result.append("推荐食物：");
-                    goodFoods.forEach(food -> result.append(food.toString()).append("；"));
-                    result.append("\n");
-                }
-                
-                // 查询有害食物
-                List<Object> badFoods = medicalRepository.findBadFoodsByDisease(disease.getName());
-                if (!badFoods.isEmpty()) {
-                    result.append("禁忌食物：");
-                    badFoods.forEach(food -> result.append(food.toString()).append("；"));
-                    result.append("\n");
-                }
-                
-                return result.toString();
+  
+    private List<Disease> searchDiseasesByKeywords(String question) {
+        // 提取可能的疾病关键词
+        String[] words = question.split("[\\s，。！？,.!?]+");
+        List<Disease> allDiseases = new ArrayList<>();
+      
+        for (String word : words) {
+            if (word.length() >= 2) {
+                List<Disease> diseases = knowledgeRepository.searchDiseases(word);
+                allDiseases.addAll(diseases);
             }
         }
-        return "";
+      
+        // 去重并返回
+        return allDiseases.stream()
+                .distinct()
+                .limit(5)
+                .collect(Collectors.toList());
     }
-    
-    private String handleDepartmentQuery(String question) {
-        String[] keywords = extractKeywords(question);
-        for (String keyword : keywords) {
-            List<Disease> diseases = medicalRepository.findDiseasesByName(keyword);
-            if (!diseases.isEmpty()) {
-                Disease disease = diseases.get(0);
-                StringBuilder result = new StringBuilder();
-                result.append(disease.getName()).append("建议就诊科室：\n");
-                
-                List<Object> departments = medicalRepository.findDepartmentsByDisease(disease.getName());
-                if (!departments.isEmpty()) {
-                    departments.forEach(dept -> result.append("• ").append(dept.toString()).append("\n"));
-                } else {
-                    result.append("请咨询医院导诊台获取准确的科室信息。");
-                }
-                
-                return result.toString();
-            }
-        }
-        return "";
-    }
-    
-    private String handleGeneralQuery(String question) {
-        String[] keywords = extractKeywords(question);
-        StringBuilder result = new StringBuilder();
-        
-        for (String keyword : keywords) {
-            if (!isStopWord(keyword)) {
-                List<Disease> diseases = medicalRepository.findDiseasesByKeyword(keyword);
-                if (!diseases.isEmpty()) {
-                    result.append("关于").append(keyword).append("的相关信息：\n");
-                    for (Disease disease : diseases) {
-                        result.append("• ").append(disease.getName());
-                        if (disease.getDesc() != null && !disease.getDesc().isEmpty()) {
-                            result.append("：").append(disease.getDesc().substring(0, 
-                                Math.min(50, disease.getDesc().length()))).append("...");
-                        }
-                        result.append("\n");
-                    }
-                    break;
+  
+    public List<String> getRecommendedDepartments(List<Disease> diseases) {
+        Set<String> departments = new HashSet<>();
+      
+        for (Disease disease : diseases) {
+            List<Object> deptInfo = knowledgeRepository.findDepartmentInfoByDisease(disease.getName());
+            if (!deptInfo.isEmpty()) {
+                Map<String, String> info = (Map<String, String>) deptInfo.get(0);
+                String dept = info.get("department");
+                if (dept != null) {
+                    departments.add(dept);
                 }
             }
         }
-        
-        return result.toString();
-    }
-    
-    private String[] extractKeywords(String question) {
-        return question.replaceAll("[？?！!。.,，]", "").split("\\s+");
-    }
-    
-    private boolean isStopWord(String word) {
-        String[] stopWords = {"什么", "是", "的", "了", "有", "在", "和", "与", "或者", "如何", "怎么", "哪些", "什么样"};
-        return Arrays.asList(stopWords).contains(word) || word.length() < 2;
+      
+        return new ArrayList<>(departments);
     }
 }
