@@ -1,9 +1,11 @@
 package com.medical.qna.medical_qna_system.service;
 
-
+import com.medical.qna.medical_qna_system.dto.RegisterRequest;
 import com.medical.qna.medical_qna_system.entity.mysql.User;
+import com.medical.qna.medical_qna_system.enums.UserRole;
 import com.medical.qna.medical_qna_system.repository.mysql.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -13,6 +15,28 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+
+    public void register(RegisterRequest request) {
+        // 检查用户名或邮箱是否已存在
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("用户名已存在");
+        }
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("邮箱已存在");
+        }
+        // 创建新用户
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setEmail(request.getEmail());
+        user.setRole(UserRole.USER); // 默认普通用户
+
+        userRepository.save(user);
+    }
 
     // 获取用户信息
     public Optional<User> getUserById(Long userId) {
