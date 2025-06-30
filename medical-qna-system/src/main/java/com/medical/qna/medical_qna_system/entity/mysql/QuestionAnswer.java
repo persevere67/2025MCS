@@ -2,7 +2,7 @@ package com.medical.qna.medical_qna_system.entity.mysql;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,20 +11,20 @@ public class QuestionAnswer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false) // (fetch = FetchType.LAZY, nullable = false) // (fetch = FetchType.LAZY, 
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
-    
+
     @Column(columnDefinition = "TEXT")
     private String question;
-    
+
     @Column(columnDefinition = "TEXT")
     private String answer;
-    
+
     @CreationTimestamp
     private LocalDateTime createdAt;
-    
+
 
     public QuestionAnswer() {}
     
@@ -33,7 +33,7 @@ public class QuestionAnswer {
         this.question = question;
         this.answer = answer;
     }
-    
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -49,3 +49,4 @@ public class QuestionAnswer {
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+}
