@@ -1,12 +1,12 @@
-package com.medical.qna.medical_qna_system.neo4j;
+package com.medical.qna.medical_qna_system.entity.neo4j;
 
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 
-@Node("Treatment")
-public class TreatmentNode {
+@Node("Food")
+public class FoodNode {
     @Id
-    private String name; // 治疗方式名称，唯一
+    private String name; // 食物名称，唯一
 
     public String getName() {
         return name;
