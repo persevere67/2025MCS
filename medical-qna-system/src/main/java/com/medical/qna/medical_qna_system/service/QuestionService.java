@@ -17,7 +17,7 @@ public class QuestionService {
     private QuestionAnswerRepository qaRepository;
     
     @Autowired
-    private Neo4jQueryService neo4jService;
+    private MedicalQueryService medicalQueryService;  // 更新为医疗查询服务
     
     @Autowired
     private UserRepository userRepository;
@@ -26,8 +26,10 @@ public class QuestionService {
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new RuntimeException("User not found"));
         
-        String answer = neo4jService.queryKnowledgeGraph(request.getQuestion());
+        // 使用医疗知识图谱查询服务
+        String answer = medicalQueryService.queryMedicalKnowledge(request.getQuestion());
         
+        // 保存问答记录到MySQL
         QuestionAnswer qa = new QuestionAnswer();
         qa.setUser(user);
         qa.setQuestion(request.getQuestion());
