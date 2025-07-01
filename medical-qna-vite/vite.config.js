@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import path from 'path';
+import path from 'path'
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
   resolve: {
@@ -10,9 +10,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+
   build: {
-    outDir: '../medical-qna-system/src/main/resources/static/', 
-    assetsDir: process.env.NODE_ENV === 'production' ? 'static/' : '', 
+    outDir: '../medical-qna-system/src/main/resources/static',
+    emptyOutDir: true, 
   },
-  base: process.env.NODE_ENV === 'production' ? '/static/' : '/',
+  base: './',
 })
