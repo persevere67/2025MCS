@@ -21,6 +21,26 @@
 </template>
 
 <script>
+import { ref } from "vue";
+import axios from "axios";
+
+const username = ref("");
+const password = ref("");
+
+const handleLogin = async() => {
+  try {
+    const res = await axios.post("/login", {
+      username: username.value,
+      password: password.value
+    });
+    alert('登录成功')
+    localStorage.setItem("token", res.data.token);
+    window.location.href = "/";
+  } catch (error) {
+    alert('登录失败，请检查用户名或密码')
+  }
+}
+
 export default {
   name: "LoginForm",
   data() {
@@ -35,7 +55,7 @@ export default {
       // 登录逻辑
     },
     goToRegister() {
-      this.$router.push("/register"); // 假设路由路径为 /register
+      this.$router.push("/register"); // 跳转到注册页面
     }
   }
 };

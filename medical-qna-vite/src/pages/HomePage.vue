@@ -9,7 +9,7 @@
 
     <div class="content">
       <h1>欢迎使用神也吃拼好饭医疗问答系统</h1>
-      <router-link to="/login" class="start-button">开始使用</router-link>
+      <router-link to="/auth" class="start-button">开始使用</router-link>
     </div>
   </div>
 </template>
