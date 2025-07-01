@@ -25,6 +25,27 @@
 </template>
 
 <script>
+import { ref } from 'vue';
+import axios from 'axios';
+
+const username = ref("");
+const password = ref("");
+const confirmPassword = ref("");
+
+const handleRegister = async() => {
+  try {
+    await axios.post("/api/register", {
+      username: username.value,
+      password: password.value
+    });
+    alert("注册成功！");
+    $emit('switchForm','login')
+    } catch (error) {
+      alert("注册失败！");
+    }
+};
+  
+
 export default {
   name: "RegisterForm",
   data() {
