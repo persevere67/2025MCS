@@ -34,7 +34,7 @@ const confirmPassword = ref("");
 
 const handleRegister = async() => {
   try {
-    await axios.post("/api/register", {
+    await axios.post("/register", {
       username: username.value,
       password: password.value
     });
