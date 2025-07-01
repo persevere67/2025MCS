@@ -5,6 +5,7 @@ import RegisterPage from '../pages/RegisterPage.vue';
 import HistoryPage from '../pages/HistoryPage.vue';
 import DrugDetailPage from '../pages/DrugDetailPage.vue';
 import QAPage from '../pages/QAPage.vue';
+import Authcontainer from '../components/auth/Authcontainer.vue';
 
 const routes = [
   { path: '/', component: HomePage, alias: '/home' },
@@ -13,6 +14,7 @@ const routes = [
   { path: '/history', component: HistoryPage },
   { path: '/drugs/:drugId', component: DrugDetailPage },
   { path: '/qna', component: QAPage },
+  { path: '/auth', component: Authcontainer },
 ];
 
 const router = createRouter({
