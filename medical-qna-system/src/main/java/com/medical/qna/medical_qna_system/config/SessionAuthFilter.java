@@ -19,7 +19,7 @@ import java.util.Collections;
 
 import com.medical.qna.medical_qna_system.entity.mysql.User;
 
-@Component  // 添加这个注解
+@Component  
 public class SessionAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, 
