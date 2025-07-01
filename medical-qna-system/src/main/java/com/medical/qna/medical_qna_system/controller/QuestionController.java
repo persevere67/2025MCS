@@ -5,7 +5,7 @@ import com.medical.qna.medical_qna_system.dto.QuestionRequest;
 import com.medical.qna.medical_qna_system.entity.mysql.User;
 import com.medical.qna.medical_qna_system.entity.mysql.QuestionAnswer;
 import com.medical.qna.medical_qna_system.repository.mysql.QuestionAnswerRepository;
-import com.medical.qna.medical_qna_system.config.SessionUtils;  // 修复导入路径
+import com.medical.qna.medical_qna_system.config.SessionUtils; 
 import com.medical.qna.medical_qna_system.service.QuestionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

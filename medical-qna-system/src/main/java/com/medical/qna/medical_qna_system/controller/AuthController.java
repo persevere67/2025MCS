@@ -2,9 +2,9 @@ package com.medical.qna.medical_qna_system.controller;
 
 import com.medical.qna.medical_qna_system.dto.LoginRequest;
 import com.medical.qna.medical_qna_system.dto.RegisterRequest;
-import com.medical.qna.medical_qna_system.entity.mysql.User;  // 修复导入路径
+import com.medical.qna.medical_qna_system.entity.mysql.User; 
 import com.medical.qna.medical_qna_system.service.AuthService;
-import com.medical.qna.medical_qna_system.config.SessionUtils;  // 修复导入路径
+import com.medical.qna.medical_qna_system.config.SessionUtils;  
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
