@@ -1,13 +1,13 @@
 package com.medical.qna.medical_qna_system;
 
-import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.Test;
 
 @SpringBootTest
-class MedicalQnaSystemApplicationTests {
+public class MedicalQnaSystemApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
-
+    @Test
+    void contextLoads() {
+        // 这个测试方法用于检查应用程序上下文是否成功加载
+    }
 }

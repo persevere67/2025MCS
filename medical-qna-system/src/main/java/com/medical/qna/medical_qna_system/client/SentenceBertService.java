@@ -1,4 +1,4 @@
-package com.medical.qna.medical_qna_system; // 确保这里是 medical_qna_system
+package com.medical.qna.medical_qna_system.client; // 确保这里是 medical_qna_system
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
