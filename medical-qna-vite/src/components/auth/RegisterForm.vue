@@ -173,10 +173,34 @@
         </a>
       </div>
     </form>
+
+    <!-- 用户协议模态框 -->
+    <transition name="fade">
+      <div v-if="showTerms" class="modal">
+        <div class="modal-content">
+          <h3>用户协议</h3>
+          <p>这里是用户协议的详细内容...</p>
+          <button @click="showTerms = false" class="close-btn">关闭</button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 隐私政策模态框 -->
+    <transition name="fade">
+      <div v-if="showPrivacy" class="modal">
+        <div class="modal-content">
+          <h3>隐私政策</h3>
+          <p>这里是隐私政策的详细内容...</p>
+          <button @click="showPrivacy = false" class="close-btn">关闭</button>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'RegisterForm',
   emits: ['switch-to-login', 'register-success'],
@@ -353,38 +377,32 @@ export default {
       this.message.text = '';
 
       try {
-        const response = await fetch(`${this.getApiUrl()}/auth/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            username: this.formData.username,
-            password: this.formData.password,
-            email: this.formData.email || undefined
-          })
+        const response = await axios.post(`${this.getApiUrl()}/auth/register`, {
+          username: this.formData.username,
+          password: this.formData.password,
+          email: this.formData.email || undefined
+        }, {
+          withCredentials: true
         });
 
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(errorData || `注册失败: ${response.status}`);
+        if (response.status === 200) {
+          this.showMessage('注册成功！请登录', 'success');
+          this.$emit('register-success', response.data);
+          this.switchToLogin();
+        } else {
+          throw new Error('注册失败');
         }
-
-        const result = await response.json();
-        
-        this.showMessage('注册成功！请登录', 'success');
-        this.$emit('register-success', result);
-        
-        // 清空表单
-        this.resetForm();
-
       } catch (error) {
         console.error('注册错误:', error);
-        this.showMessage(error.message || '注册失败，请重试');
+        this.showMessage(error.response?.data?.message || '注册失败，请重试');
       } finally {
         this.loading = false;
       }
+    },
+
+    // 切换到登录页面
+    switchToLogin() {
+      this.$emit('switch-to-login');
     },
 
     // 重置表单
@@ -703,6 +721,44 @@ export default {
 
 .switch-link:hover {
   text-decoration: underline;
+}
+
+/* 模态框样式 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 400px;
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.close-btn:hover {
+  color: #c0392b;
 }
 
 /* 动画效果 */
