@@ -157,6 +157,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 export default {
   name: 'LoginForm',
   emits: ['switch-to-register', 'login-success'],
