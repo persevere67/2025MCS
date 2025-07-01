@@ -139,7 +139,6 @@
 						<exclude>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
-							<argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 						</exclude>
 					</excludes>
 				</configuration>

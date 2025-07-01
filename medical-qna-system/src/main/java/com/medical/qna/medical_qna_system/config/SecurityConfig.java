@@ -34,7 +34,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/check").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/doctor/**").hasAnyRole("DOCTOR", "ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(sessionAuthFilter, UsernamePasswordAuthenticationFilter.class);
