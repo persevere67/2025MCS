@@ -199,7 +199,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '@/utils/api';
 
 export default {
   name: 'RegisterForm',
@@ -227,7 +227,6 @@ export default {
   },
 
   computed: {
-    // 表单验证状态
     isFormValid() {
       return this.formData.username.length >= 3 &&
              this.formData.password.length >= 6 &&
@@ -236,7 +235,6 @@ export default {
              Object.keys(this.errors).length === 0;
     },
 
-    // 密码强度
     passwordStrength() {
       const password = this.formData.password;
       if (!password) return { width: '0%', class: '', text: '' };
@@ -272,12 +270,6 @@ export default {
   },
 
   methods: {
-    // API基础URL
-    getApiUrl() {
-      return process.env.VUE_APP_API_URL || 'http://localhost:8080';
-    },
-
-    // 显示消息
     showMessage(text, type = 'error') {
       this.message = { text, type };
       setTimeout(() => {
@@ -285,7 +277,6 @@ export default {
       }, 5000);
     },
 
-    // 字段验证
     validateField(fieldName) {
       const value = this.formData[fieldName];
       
@@ -344,27 +335,23 @@ export default {
       }
     },
 
-    // 清除字段错误
     clearFieldError(fieldName) {
       if (this.errors[fieldName]) {
         delete this.errors[fieldName];
       }
     },
 
-    // 检查字段是否有效
     isValidField(fieldName) {
       const value = this.formData[fieldName];
       return value && !this.errors[fieldName];
     },
 
-    // 验证所有字段
     validateAllFields() {
       ['username', 'email', 'password', 'confirmPassword', 'agreeTo'].forEach(field => {
         this.validateField(field);
       });
     },
 
-    // 处理注册
     async handleRegister() {
       this.validateAllFields();
       
@@ -377,35 +364,34 @@ export default {
       this.message.text = '';
 
       try {
-        const response = await axios.post(`${this.getApiUrl()}/auth/register`, {
+        const result = await api.auth.register({
           username: this.formData.username,
           password: this.formData.password,
           email: this.formData.email || undefined
-        }, {
-          withCredentials: true
         });
 
-        if (response.status === 200) {
-          this.showMessage('注册成功！请登录', 'success');
-          this.$emit('register-success', response.data);
-          this.switchToLogin();
+        if (result.success) {
+          this.showMessage('注册成功！正在为您自动登录...', 'success');
+          this.$emit('register-success', result.data);
+          
+          setTimeout(() => {
+            this.$emit('switch-to-login');
+          }, 2000);
         } else {
-          throw new Error('注册失败');
+          throw new Error(result.message);
         }
+
       } catch (error) {
-        console.error('注册错误:', error);
-        this.showMessage(error.response?.data?.message || '注册失败，请重试');
+        this.showMessage(error.message || '注册失败，请重试');
       } finally {
         this.loading = false;
       }
     },
 
-    // 切换到登录页面
     switchToLogin() {
       this.$emit('switch-to-login');
     },
 
-    // 重置表单
     resetForm() {
       this.formData = {
         username: '',

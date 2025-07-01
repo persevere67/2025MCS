@@ -1,4 +1,4 @@
-package com.medical.qna.medical_qna_system.enums;
+package com.medical.qna.medical_qna_system.common.enums;
 
 public enum UserRole {
     USER("USER"),

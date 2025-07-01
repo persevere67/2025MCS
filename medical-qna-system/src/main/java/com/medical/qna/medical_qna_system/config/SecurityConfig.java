@@ -1,5 +1,6 @@
 package com.medical.qna.medical_qna_system.config;
 
+import com.medical.qna.medical_qna_system.filter.SessionAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,13 +29,14 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .maximumSessions(1)
+                .maximumSessions(3)
                 .maxSessionsPreventsLogin(false)
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/index.html", "/assets/**", "/js/**", "/css/**", "/favicon.ico").permitAll()
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/check").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(sessionAuthFilter, UsernamePasswordAuthenticationFilter.class);

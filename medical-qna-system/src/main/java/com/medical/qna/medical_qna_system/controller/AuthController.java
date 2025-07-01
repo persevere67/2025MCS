@@ -1,157 +1,106 @@
 package com.medical.qna.medical_qna_system.controller;
 
-import com.medical.qna.medical_qna_system.dto.LoginRequest;
-import com.medical.qna.medical_qna_system.dto.RegisterRequest;
-import com.medical.qna.medical_qna_system.entity.mysql.User; 
+import com.medical.qna.medical_qna_system.dto.request.LoginRequest;
+import com.medical.qna.medical_qna_system.dto.request.RegisterRequest;
+import com.medical.qna.medical_qna_system.dto.response.ApiResponse;
+import com.medical.qna.medical_qna_system.dto.response.SessionStatus;
+import com.medical.qna.medical_qna_system.dto.response.UserDto;
+import com.medical.qna.medical_qna_system.entity.mysql.User;
+import com.medical.qna.medical_qna_system.security.SessionManager;
 import com.medical.qna.medical_qna_system.service.AuthService;
-import com.medical.qna.medical_qna_system.config.SessionUtils;  
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpServletRequest;
-
-import jakarta.validation.Valid;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:8080"}, allowCredentials = "true")
 @Slf4j
 public class AuthController {
   
     private final AuthService authService;
+    private final SessionManager sessionManager;
   
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request, 
-                                    HttpServletRequest httpRequest) {
-        try {
-            User user = authService.register(request);
-          
-            // 注册后自动登录
-            HttpSession session = SessionUtils.getOrCreateSession(httpRequest);
-            LoginRequest loginRequest = new LoginRequest();
-            loginRequest.setUsername(request.getUsername());
-            loginRequest.setPassword(request.getPassword());
+    public ResponseEntity<ApiResponse<UserDto>> register(
+            @Valid @RequestBody RegisterRequest request, 
+            HttpServletRequest httpRequest) {
             
-            authService.login(loginRequest, session);
-          
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "注册成功");
-            response.put("user", buildUserResponse(user));
-          
-            return ResponseEntity.ok(response);
-          
-        } catch (Exception e) {
-            log.error("用户注册失败", e);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
+        User user = authService.register(request);
+        
+        // 注册后自动登录
+        HttpSession session = httpRequest.getSession(true);
+        sessionManager.createUserSession(session, user);
+        
+        return ResponseEntity.ok(ApiResponse.success(
+            "注册成功", 
+            UserDto.fromEntity(user)
+        ));
     }
   
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, 
-                                 HttpServletRequest httpRequest) {
-        try {
-            HttpSession session = SessionUtils.getOrCreateSession(httpRequest);
-            User user = authService.login(request, session);
-          
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "登录成功");
-            response.put("user", buildUserResponse(user));
-          
-            return ResponseEntity.ok(response);
-          
-        } catch (Exception e) {
-            log.error("用户登录失败: {}", e.getMessage());
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
+    public ResponseEntity<ApiResponse<UserDto>> login(
+            @Valid @RequestBody LoginRequest request, 
+            HttpServletRequest httpRequest) {
+            
+        User user = authService.login(request);
+        
+        HttpSession session = httpRequest.getSession(true);
+        sessionManager.createUserSession(session, user);
+        
+        return ResponseEntity.ok(ApiResponse.success(
+            "登录成功", 
+            UserDto.fromEntity(user)
+        ));
     }
   
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request) {
-        try {
-            HttpSession session = SessionUtils.getSession(request);
-            authService.logout(session);
-          
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "登出成功");
-            return ResponseEntity.ok(response);
-          
-        } catch (Exception e) {
-            log.error("用户登出失败", e);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "登出失败");
-            return ResponseEntity.badRequest().body(response);
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            sessionManager.invalidateSession(session);
         }
+        
+        return ResponseEntity.ok(ApiResponse.success("登出成功", null));
     }
   
     @GetMapping("/current")
-    public ResponseEntity<?> getCurrentUser(HttpServletRequest request) {
-        try {
-            HttpSession session = SessionUtils.getSession(request);
-          
-            if (session == null || !SessionUtils.isSessionValid(session)) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "未登录或Session已过期");
-                return ResponseEntity.status(401).body(response);
-            }
-          
-            User currentUser = SessionUtils.getCurrentUser(session);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("user", buildUserResponse(currentUser));
-          
-            return ResponseEntity.ok(response);
-          
-        } catch (Exception e) {
-            log.error("获取当前用户失败", e);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "系统错误");
-            return ResponseEntity.status(500).body(response);
+    public ResponseEntity<ApiResponse<UserDto>> getCurrentUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        
+        if (session == null || !sessionManager.isSessionValid(session)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("UNAUTHORIZED", "未登录或Session已过期"));
         }
+        
+        User currentUser = sessionManager.getCurrentUser(session);
+        return ResponseEntity.ok(ApiResponse.success(
+            "获取成功", 
+            UserDto.fromEntity(currentUser)
+        ));
     }
   
     @GetMapping("/check")
-    public ResponseEntity<?> checkSession(HttpServletRequest request) {
-        HttpSession session = SessionUtils.getSession(request);
-        Map<String, Object> response = new HashMap<>();
-      
-        if (session != null && SessionUtils.isSessionValid(session)) {
-            User user = SessionUtils.getCurrentUser(session);
-            response.put("authenticated", true);
-            response.put("sessionValid", true);
-            response.put("username", user != null ? user.getUsername() : null);
+    public ResponseEntity<ApiResponse<SessionStatus>> checkSession(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        SessionStatus status = new SessionStatus();
+        
+        if (session != null && sessionManager.isSessionValid(session)) {
+            User user = sessionManager.getCurrentUser(session);
+            status.setAuthenticated(true);
+            status.setSessionValid(true);
+            status.setUsername(user != null ? user.getUsername() : null);
+            status.setRole(user != null ? user.getRole() : null);
         } else {
-            response.put("authenticated", false);
-            response.put("sessionValid", false);
+            status.setAuthenticated(false);
+            status.setSessionValid(false);
         }
-      
-        return ResponseEntity.ok(response);
-    }
-  
-    private Map<String, Object> buildUserResponse(User user) {
-        Map<String, Object> userInfo = new HashMap<>();
-        userInfo.put("id", user.getId());
-        userInfo.put("username", user.getUsername());
-        userInfo.put("email", user.getEmail());
-        userInfo.put("role", user.getRole());
-        userInfo.put("createAt", user.getCreateAt());
-        return userInfo;
+        
+        return ResponseEntity.ok(ApiResponse.success("检查完成", status));
     }
 }

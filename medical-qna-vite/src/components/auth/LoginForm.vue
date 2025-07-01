@@ -137,27 +137,12 @@
         </a>
       </div>
     </form>
-
-    <!-- 登录统计 -->
-    <div class="login-stats" v-if="showStats">
-      <div class="stat-item">
-        <span class="stat-number">{{ stats.totalUsers }}</span>
-        <span class="stat-label">注册用户</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-number">{{ stats.onlineUsers }}</span>
-        <span class="stat-label">在线用户</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-number">{{ stats.totalQuestions }}</span>
-        <span class="stat-label">问题解答</span>
-      </div>
     </div>
-  </div>
 </template>
 
 <script>
-import axios from 'axios';
+import api from '@/utils/api';
+
 export default {
   name: 'LoginForm',
   emits: ['switch-to-register', 'login-success'],
@@ -172,12 +157,6 @@ export default {
       errors: {},
       loading: false,
       showPassword: false,
-      showStats: true,
-      stats: {
-        totalUsers: '1,234',
-        onlineUsers: '56',
-        totalQuestions: '8,901'
-      },
       message: {
         text: '',
         type: 'error'
@@ -186,7 +165,6 @@ export default {
   },
 
   computed: {
-    // 表单验证状态
     isFormValid() {
       return this.formData.username.length >= 3 &&
              this.formData.password.length >= 6 &&
@@ -195,20 +173,10 @@ export default {
   },
 
   mounted() {
-    // 页面加载时检查是否有记住的用户信息
     this.loadRememberedUser();
-    
-    // 模拟加载统计数据
-    this.loadStats();
   },
 
   methods: {
-    // API基础URL
-    getApiUrl() {
-      return process.env.VUE_APP_API_URL || 'http://localhost:8080';
-    },
-
-    // 显示消息
     showMessage(text, type = 'error') {
       this.message = { text, type };
       setTimeout(() => {
@@ -216,7 +184,6 @@ export default {
       }, 5000);
     },
 
-    // 字段验证
     validateField(fieldName) {
       const value = this.formData[fieldName];
       
@@ -243,27 +210,23 @@ export default {
       }
     },
 
-    // 清除字段错误
     clearFieldError(fieldName) {
       if (this.errors[fieldName]) {
         delete this.errors[fieldName];
       }
     },
 
-    // 检查字段是否有效
     isValidField(fieldName) {
       const value = this.formData[fieldName];
       return value && !this.errors[fieldName];
     },
 
-    // 验证所有字段
     validateAllFields() {
       ['username', 'password'].forEach(field => {
         this.validateField(field);
       });
     },
 
-    // 处理登录
     async handleLogin() {
       this.validateAllFields();
       
@@ -276,97 +239,55 @@ export default {
       this.message.text = '';
 
       try {
-        const response = await fetch(`${this.getApiUrl()}/auth/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            username: this.formData.username,
-            password: this.formData.password
-          })
+        const result = await api.auth.login({
+          username: this.formData.username,
+          password: this.formData.password
         });
 
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(errorData || `登录失败: ${response.status}`);
-        }
-
-        // 获取用户信息
-        const userInfo = await this.getCurrentUser();
-        
-        // 保存记住我的设置
-        if (this.formData.rememberMe) {
-          this.saveRememberedUser();
+        if (result.success) {
+          this.showMessage('登录成功！', 'success');
+          
+          if (this.formData.rememberMe) {
+            this.saveRememberedUser();
+          } else {
+            this.clearRememberedUser();
+          }
+          
+          this.$emit('login-success', result.data);
         } else {
-          this.clearRememberedUser();
+          throw new Error(result.message);
         }
-
-        this.showMessage('登录成功！', 'success');
-        this.$emit('login-success', userInfo);
 
       } catch (error) {
-        console.error('登录错误:', error);
-        this.showMessage(error.message || '登录失败，请检查用户名和密码');
+        this.showMessage(error.message || '登录失败');
       } finally {
         this.loading = false;
       }
     },
 
-    // 获取当前用户信息
-    async getCurrentUser() {
-      try {
-        const response = await fetch(`${this.getApiUrl()}/auth/current-user`, {
-          method: 'GET',
-          credentials: 'include'
-        });
-
-        if (!response.ok) {
-          throw new Error('获取用户信息失败');
-        }
-
-        return await response.json();
-      } catch (error) {
-        console.error('获取用户信息错误:', error);
-        throw error;
-      }
-    },
-
-    // 快速登录
     async quickLogin(type) {
       let credentials;
       
       if (type === 'demo') {
-        credentials = {
-          username: 'demo',
-          password: 'demo123'
-        };
+        credentials = { username: 'demo', password: 'demo123' };
         this.showMessage('正在使用演示账号登录...', 'success');
       } else if (type === 'guest') {
-        credentials = {
-          username: 'guest',
-          password: 'guest123'
-        };
+        credentials = { username: 'guest', password: 'guest123' };
         this.showMessage('正在以游客身份登录...', 'success');
       }
 
-      // 填充表单
       this.formData.username = credentials.username;
       this.formData.password = credentials.password;
       
-      // 延迟一下再登录，让用户看到填充过程
       setTimeout(() => {
         this.handleLogin();
       }, 500);
     },
 
-    // 忘记密码
     handleForgotPassword() {
       this.showMessage('忘记密码功能正在开发中，请联系管理员重置密码', 'error');
     },
 
-    // 保存记住的用户信息
     saveRememberedUser() {
       try {
         localStorage.setItem('rememberedUser', JSON.stringify({
@@ -378,13 +299,11 @@ export default {
       }
     },
 
-    // 加载记住的用户信息
     loadRememberedUser() {
       try {
         const remembered = localStorage.getItem('rememberedUser');
         if (remembered) {
           const data = JSON.parse(remembered);
-          // 检查是否过期（7天）
           if (Date.now() - data.timestamp < 7 * 24 * 60 * 60 * 1000) {
             this.formData.username = data.username;
             this.formData.rememberMe = true;
@@ -397,33 +316,11 @@ export default {
       }
     },
 
-    // 清除记住的用户信息
     clearRememberedUser() {
       try {
         localStorage.removeItem('rememberedUser');
       } catch (error) {
         console.warn('无法清除记住的用户信息:', error);
-      }
-    },
-
-    // 加载统计数据
-    async loadStats() {
-      try {
-        // 这里可以调用实际的API获取统计数据
-        // const response = await fetch(`${this.getApiUrl()}/api/stats`);
-        // const stats = await response.json();
-        // this.stats = stats;
-        
-        // 现在使用模拟数据
-        setTimeout(() => {
-          this.stats = {
-            totalUsers: '1,567',
-            onlineUsers: '89',
-            totalQuestions: '12,345'
-          };
-        }, 1000);
-      } catch (error) {
-        console.warn('无法加载统计数据:', error);
       }
     }
   }
@@ -768,34 +665,6 @@ export default {
 
 .switch-link:hover {
   text-decoration: underline;
-}
-
-.login-stats {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
-  padding: 20px;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 20px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-number {
-  display: block;
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #666;
 }
 
 /* 动画效果 */
