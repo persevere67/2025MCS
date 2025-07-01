@@ -15,14 +15,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-  
+
     private final SessionAuthFilter sessionAuthFilter;
-  
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-  
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
@@ -32,12 +32,13 @@ public class SecurityConfig {
                 .maxSessionsPreventsLogin(false)
             )
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/index.html", "/assets/**", "/js/**", "/css/**", "/favicon.ico").permitAll()
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/check").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(sessionAuthFilter, UsernamePasswordAuthenticationFilter.class);
-      
+
         return http.build();
     }
 }
