@@ -199,7 +199,7 @@
 </template>
 
 <script>
-import api from '@/utils/api';
+import api from '@/utils/api'
 
 export default {
   name: 'RegisterForm',
@@ -223,7 +223,7 @@ export default {
         text: '',
         type: 'error'
       }
-    };
+    }
   },
 
   computed: {
@@ -232,30 +232,30 @@ export default {
              this.formData.password.length >= 6 &&
              this.formData.password === this.formData.confirmPassword &&
              this.formData.agreeTo &&
-             Object.keys(this.errors).length === 0;
+             Object.keys(this.errors).length === 0
     },
 
     passwordStrength() {
-      const password = this.formData.password;
-      if (!password) return { width: '0%', class: '', text: '' };
+      const password = this.formData.password
+      if (!password) return { width: '0%', class: '', text: '' }
 
-      let score = 0;
-      let feedback = [];
+      let score = 0
+      let feedback = []
 
-      if (password.length >= 8) score++;
-      else feedback.push('至少8位');
+      if (password.length >= 8) score++
+      else feedback.push('至少8位')
 
-      if (/[a-z]/.test(password)) score++;
-      else feedback.push('包含小写字母');
+      if (/[a-z]/.test(password)) score++
+      else feedback.push('包含小写字母')
 
-      if (/[A-Z]/.test(password)) score++;
-      else feedback.push('包含大写字母');
+      if (/[A-Z]/.test(password)) score++
+      else feedback.push('包含大写字母')
 
-      if (/\d/.test(password)) score++;
-      else feedback.push('包含数字');
+      if (/\d/.test(password)) score++
+      else feedback.push('包含数字')
 
-      if (/[!@#$%^&*]/.test(password)) score++;
-      else feedback.push('包含特殊字符');
+      if (/[!@#$%^&*]/.test(password)) score++
+      else feedback.push('包含特殊字符')
 
       const strengths = [
         { width: '20%', class: 'very-weak', text: '很弱' },
@@ -263,133 +263,133 @@ export default {
         { width: '60%', class: 'medium', text: '中等' },
         { width: '80%', class: 'strong', text: '强' },
         { width: '100%', class: 'very-strong', text: '很强' }
-      ];
+      ]
 
-      return strengths[score] || strengths[0];
+      return strengths[score] || strengths[0]
     }
   },
 
   methods: {
     showMessage(text, type = 'error') {
-      this.message = { text, type };
+      this.message = { text, type }
       setTimeout(() => {
-        this.message.text = '';
-      }, 5000);
+        this.message.text = ''
+      }, 5000)
     },
 
     validateField(fieldName) {
-      const value = this.formData[fieldName];
+      const value = this.formData[fieldName]
       
       switch (fieldName) {
         case 'username':
           if (!value) {
-            this.errors.username = '用户名不能为空';
+            this.errors.username = '用户名不能为空'
           } else if (value.length < 3) {
-            this.errors.username = '用户名至少3个字符';
+            this.errors.username = '用户名至少3个字符'
           } else if (value.length > 20) {
-            this.errors.username = '用户名不能超过20个字符';
+            this.errors.username = '用户名不能超过20个字符'
           } else if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(value)) {
-            this.errors.username = '用户名只能包含字母、数字、下划线和中文';
+            this.errors.username = '用户名只能包含字母、数字、下划线和中文'
           } else {
-            delete this.errors.username;
+            delete this.errors.username
           }
-          break;
+          break
 
         case 'email':
           if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-            this.errors.email = '请输入有效的邮箱地址';
+            this.errors.email = '请输入有效的邮箱地址'
           } else {
-            delete this.errors.email;
+            delete this.errors.email
           }
-          break;
+          break
 
         case 'password':
           if (!value) {
-            this.errors.password = '密码不能为空';
+            this.errors.password = '密码不能为空'
           } else if (value.length < 6) {
-            this.errors.password = '密码至少6个字符';
+            this.errors.password = '密码至少6个字符'
           } else if (value.length > 50) {
-            this.errors.password = '密码不能超过50个字符';
+            this.errors.password = '密码不能超过50个字符'
           } else {
-            delete this.errors.password;
+            delete this.errors.password
           }
-          break;
+          break
 
         case 'confirmPassword':
           if (!value) {
-            this.errors.confirmPassword = '请确认密码';
+            this.errors.confirmPassword = '请确认密码'
           } else if (value !== this.formData.password) {
-            this.errors.confirmPassword = '两次输入的密码不一致';
+            this.errors.confirmPassword = '两次输入的密码不一致'
           } else {
-            delete this.errors.confirmPassword;
+            delete this.errors.confirmPassword
           }
-          break;
+          break
 
         case 'agreeTo':
           if (!this.formData.agreeTo) {
-            this.errors.agreeTo = '请同意用户协议和隐私政策';
+            this.errors.agreeTo = '请同意用户协议和隐私政策'
           } else {
-            delete this.errors.agreeTo;
+            delete this.errors.agreeTo
           }
-          break;
+          break
       }
     },
 
     clearFieldError(fieldName) {
       if (this.errors[fieldName]) {
-        delete this.errors[fieldName];
+        delete this.errors[fieldName]
       }
     },
 
     isValidField(fieldName) {
-      const value = this.formData[fieldName];
-      return value && !this.errors[fieldName];
+      const value = this.formData[fieldName]
+      return value && !this.errors[fieldName]
     },
 
     validateAllFields() {
       ['username', 'email', 'password', 'confirmPassword', 'agreeTo'].forEach(field => {
-        this.validateField(field);
-      });
+        this.validateField(field)
+      })
     },
 
     async handleRegister() {
-      this.validateAllFields();
+      this.validateAllFields()
       
       if (!this.isFormValid) {
-        this.showMessage('请检查表单中的错误信息');
-        return;
+        this.showMessage('请检查表单中的错误信息')
+        return
       }
 
-      this.loading = true;
-      this.message.text = '';
+      this.loading = true
+      this.message.text = ''
 
       try {
         const result = await api.auth.register({
           username: this.formData.username,
           password: this.formData.password,
           email: this.formData.email || undefined
-        });
+        })
 
         if (result.success) {
-          this.showMessage('注册成功！正在为您自动登录...', 'success');
-          this.$emit('register-success', result.data);
+          this.showMessage('注册成功！正在为您自动登录...', 'success')
+          this.$emit('register-success', result.data)
           
           setTimeout(() => {
-            this.$emit('switch-to-login');
-          }, 2000);
+            this.$emit('switch-to-login')
+          }, 2000)
         } else {
-          throw new Error(result.message);
+          throw new Error(result.message)
         }
 
       } catch (error) {
-        this.showMessage(error.message || '注册失败，请重试');
+        this.showMessage(error.message || '注册失败，请重试')
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
 
     switchToLogin() {
-      this.$emit('switch-to-login');
+      this.$emit('switch-to-login')
     },
 
     resetForm() {
@@ -399,27 +399,25 @@ export default {
         password: '',
         confirmPassword: '',
         agreeTo: false
-      };
-      this.errors = {};
-      this.showPassword = false;
+      }
+      this.errors = {}
+      this.showPassword = false
     }
   }
-};
+}
 </script>
 
 <style scoped>
 .register-container {
-  width: 600px;
-  margin: 0 auto;
-  padding: 20px;
+  width: 100%;
 }
 
 .register-form {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e1e5e9;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  border: none;
 }
 
 .form-header {
@@ -473,7 +471,7 @@ export default {
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 300;
+  font-weight: 500;
   color: #333;
 }
 
@@ -501,6 +499,7 @@ export default {
   font-size: 16px;
   transition: all 0.3s ease;
   background: #fff;
+  box-sizing: border-box;
 }
 
 .input-wrapper input:focus {
@@ -607,7 +606,7 @@ export default {
 .checkmark {
   width: 20px;
   height: 20px;
-  border: 4px solid #e1e5e9;
+  border: 2px solid #e1e5e9;
   border-radius: 4px;
   position: relative;
   flex-shrink: 0;
@@ -772,14 +771,6 @@ export default {
 
 /* 响应式设计 */
 @media (max-width: 480px) {
-  .register-container {
-    padding: 16px;
-  }
-  
-  .register-form {
-    padding: 24px;
-  }
-  
   .form-header h3 {
     font-size: 20px;
   }

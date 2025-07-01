@@ -30,7 +30,7 @@
 
         <div class="testimonial">
           <div class="quote">"这个平台帮助我快速获得了专业的医疗建议，非常实用！"</div>
-          <div class="author">— 91郭先生，至尊VIP用户</div>
+          <div class="author">— 张先生，普通用户</div>
         </div>
       </div>
 
@@ -109,59 +109,109 @@
 </template>
 
 <script>
-import api from '@/utils/api';
+import LoginForm from './LoginForm.vue'
+import RegisterForm from './RegisterForm.vue'
+import api from '@/utils/api'
 
-export class AuthManager {
-  constructor() {
-    this.user = null;
-    this.isAuthenticated = false;
-  }
-
-  async checkAuthStatus() {
-    try {
-      const result = await api.auth.checkSession();
-      if (result.success && result.data.authenticated) {
-        this.isAuthenticated = true;
-        const userResult = await api.auth.getCurrentUser();
-        if (userResult.success) {
-          this.user = userResult.data;
+export default {
+  name: 'AuthContainer',
+  components: {
+    LoginForm,
+    RegisterForm
+  },
+  
+  data() {
+    return {
+      currentView: 'login',
+      slideDirection: 'slide-left',
+      showModal: false,
+      modalTitle: '',
+      modalContent: '',
+      features: [
+        {
+          id: 1,
+          icon: '🤖',
+          title: 'AI智能诊断',
+          description: '基于大数据和机器学习的智能医疗咨询'
+        },
+        {
+          id: 2,
+          icon: '👨‍⚕️',
+          title: '专业医生',
+          description: '三甲医院医生在线回答您的健康问题'
+        },
+        {
+          id: 3,
+          icon: '🔒',
+          title: '隐私保护',
+          description: '严格保护用户隐私，医疗数据安全可靠'
+        },
+        {
+          id: 4,
+          icon: '⚡',
+          title: '快速响应',
+          description: '24小时在线服务，快速获得专业建议'
         }
-        return true;
-      } else {
-        this.isAuthenticated = false;
-        this.user = null;
-        return false;
-      }
-    } catch (error) {
-      console.error('检查登录状态失败:', error);
-      this.isAuthenticated = false;
-      this.user = null;
-      return false;
+      ]
     }
-  }
+  },
 
-  setUser(userData) {
-    this.user = userData;
-    this.isAuthenticated = true;
-  }
+  computed: {
+    tabIndicatorStyle() {
+      return {
+        transform: this.currentView === 'login' ? 'translateX(0)' : 'translateX(100%)'
+      }
+    }
+  },
 
-  clearUser() {
-    this.user = null;
-    this.isAuthenticated = false;
-  }
+  methods: {
+    switchView(view) {
+      const previousView = this.currentView
+      this.currentView = view
+      
+      // 设置滑动方向
+      if (previousView === 'login' && view === 'register') {
+        this.slideDirection = 'slide-left'
+      } else if (previousView === 'register' && view === 'login') {
+        this.slideDirection = 'slide-right'
+      }
+    },
 
-  async logout() {
-    try {
-      await api.auth.logout();
-    } catch (error) {
-      console.error('登出失败:', error);
-    } finally {
-      this.clearUser();
+    handleLoginSuccess(userData) {
+      console.log('登录成功:', userData)
+      // 这里可以跳转到主页面或者触发父组件的事件
+      this.$emit('login-success', userData)
+    },
+
+    handleRegisterSuccess(userData) {
+      console.log('注册成功:', userData)
+      // 注册成功后通常切换到登录页面
+      this.switchView('login')
+    },
+
+    showPrivacy() {
+      this.modalTitle = '隐私政策'
+      this.modalContent = '我们致力于保护您的个人隐私。我们收集和使用您的信息仅用于提供更好的医疗咨询服务。您的医疗数据将严格保密，不会向第三方泄露。'
+      this.showModal = true
+    },
+
+    showTerms() {
+      this.modalTitle = '服务条款'
+      this.modalContent = '欢迎使用我们的医疗问答平台。使用本服务即表示您同意遵守我们的服务条款。请注意，本平台提供的信息仅供参考，不能替代专业医疗诊断。'
+      this.showModal = true
+    },
+
+    showHelp() {
+      this.modalTitle = '帮助'
+      this.modalContent = '如果您在使用过程中遇到任何问题，请联系我们的客服团队。客服热线：400-123-4567，工作时间：周一至周日 9:00-18:00。'
+      this.showModal = true
+    },
+
+    closeModal() {
+      this.showModal = false
     }
   }
 }
-
-export const authManager = new AuthManager();
 </script>
 
 <style scoped>
@@ -238,7 +288,7 @@ export const authManager = new AuthManager();
 }
 
 .info-panel {
-  padding: 20px 40px;
+  padding: 40px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -246,7 +296,7 @@ export const authManager = new AuthManager();
 }
 
 .brand {
-  margin-bottom: 100px;
+  margin-bottom: 60px;
 }
 
 .brand-icon {
@@ -268,14 +318,14 @@ export const authManager = new AuthManager();
 }
 
 .features {
-  margin-bottom: 60px;
+  margin-bottom: 40px;
 }
 
 .feature-item {
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .feature-icon {
@@ -327,7 +377,7 @@ export const authManager = new AuthManager();
 }
 
 .form-container {
-  max-width: 800px;
+  max-width: 500px;
   margin: 0 auto;
   width: 100%;
 }
