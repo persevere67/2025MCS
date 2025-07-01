@@ -137,11 +137,11 @@
         </a>
       </div>
     </form>
-    </div>
+  </div>
 </template>
 
 <script>
-import api from '@/utils/api';
+import api from '@/utils/api'
 
 export default {
   name: 'LoginForm',
@@ -161,131 +161,131 @@ export default {
         text: '',
         type: 'error'
       }
-    };
+    }
   },
 
   computed: {
     isFormValid() {
       return this.formData.username.length >= 3 &&
              this.formData.password.length >= 6 &&
-             Object.keys(this.errors).length === 0;
+             Object.keys(this.errors).length === 0
     }
   },
 
   mounted() {
-    this.loadRememberedUser();
+    this.loadRememberedUser()
   },
 
   methods: {
     showMessage(text, type = 'error') {
-      this.message = { text, type };
+      this.message = { text, type }
       setTimeout(() => {
-        this.message.text = '';
-      }, 5000);
+        this.message.text = ''
+      }, 5000)
     },
 
     validateField(fieldName) {
-      const value = this.formData[fieldName];
+      const value = this.formData[fieldName]
       
       switch (fieldName) {
         case 'username':
           if (!value) {
-            this.errors.username = '用户名不能为空';
+            this.errors.username = '用户名不能为空'
           } else if (value.length < 3) {
-            this.errors.username = '用户名至少3个字符';
+            this.errors.username = '用户名至少3个字符'
           } else {
-            delete this.errors.username;
+            delete this.errors.username
           }
-          break;
+          break
 
         case 'password':
           if (!value) {
-            this.errors.password = '密码不能为空';
+            this.errors.password = '密码不能为空'
           } else if (value.length < 6) {
-            this.errors.password = '密码至少6个字符';
+            this.errors.password = '密码至少6个字符'
           } else {
-            delete this.errors.password;
+            delete this.errors.password
           }
-          break;
+          break
       }
     },
 
     clearFieldError(fieldName) {
       if (this.errors[fieldName]) {
-        delete this.errors[fieldName];
+        delete this.errors[fieldName]
       }
     },
 
     isValidField(fieldName) {
-      const value = this.formData[fieldName];
-      return value && !this.errors[fieldName];
+      const value = this.formData[fieldName]
+      return value && !this.errors[fieldName]
     },
 
     validateAllFields() {
       ['username', 'password'].forEach(field => {
-        this.validateField(field);
-      });
+        this.validateField(field)
+      })
     },
 
     async handleLogin() {
-      this.validateAllFields();
+      this.validateAllFields()
       
       if (!this.isFormValid) {
-        this.showMessage('请检查用户名和密码');
-        return;
+        this.showMessage('请检查用户名和密码')
+        return
       }
 
-      this.loading = true;
-      this.message.text = '';
+      this.loading = true
+      this.message.text = ''
 
       try {
         const result = await api.auth.login({
           username: this.formData.username,
           password: this.formData.password
-        });
+        })
 
         if (result.success) {
-          this.showMessage('登录成功！', 'success');
+          this.showMessage('登录成功！', 'success')
           
           if (this.formData.rememberMe) {
-            this.saveRememberedUser();
+            this.saveRememberedUser()
           } else {
-            this.clearRememberedUser();
+            this.clearRememberedUser()
           }
           
-          this.$emit('login-success', result.data);
+          this.$emit('login-success', result.data)
         } else {
-          throw new Error(result.message);
+          throw new Error(result.message)
         }
 
       } catch (error) {
-        this.showMessage(error.message || '登录失败');
+        this.showMessage(error.message || '登录失败')
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
 
     async quickLogin(type) {
-      let credentials;
+      let credentials
       
       if (type === 'demo') {
-        credentials = { username: 'demo', password: 'demo123' };
-        this.showMessage('正在使用演示账号登录...', 'success');
+        credentials = { username: 'demo', password: 'demo123' }
+        this.showMessage('正在使用演示账号登录...', 'success')
       } else if (type === 'guest') {
-        credentials = { username: 'guest', password: 'guest123' };
-        this.showMessage('正在以游客身份登录...', 'success');
+        credentials = { username: 'guest', password: 'guest123' }
+        this.showMessage('正在以游客身份登录...', 'success')
       }
 
-      this.formData.username = credentials.username;
-      this.formData.password = credentials.password;
+      this.formData.username = credentials.username
+      this.formData.password = credentials.password
       
       setTimeout(() => {
-        this.handleLogin();
-      }, 500);
+        this.handleLogin()
+      }, 500)
     },
 
     handleForgotPassword() {
-      this.showMessage('忘记密码功能正在开发中，请联系管理员重置密码', 'error');
+      this.showMessage('忘记密码功能正在开发中，请联系管理员重置密码', 'error')
     },
 
     saveRememberedUser() {
@@ -293,54 +293,51 @@ export default {
         localStorage.setItem('rememberedUser', JSON.stringify({
           username: this.formData.username,
           timestamp: Date.now()
-        }));
+        }))
       } catch (error) {
-        console.warn('无法保存记住的用户信息:', error);
+        console.warn('无法保存记住的用户信息:', error)
       }
     },
 
     loadRememberedUser() {
       try {
-        const remembered = localStorage.getItem('rememberedUser');
+        const remembered = localStorage.getItem('rememberedUser')
         if (remembered) {
-          const data = JSON.parse(remembered);
+          const data = JSON.parse(remembered)
           if (Date.now() - data.timestamp < 7 * 24 * 60 * 60 * 1000) {
-            this.formData.username = data.username;
-            this.formData.rememberMe = true;
+            this.formData.username = data.username
+            this.formData.rememberMe = true
           } else {
-            this.clearRememberedUser();
+            this.clearRememberedUser()
           }
         }
       } catch (error) {
-        console.warn('无法加载记住的用户信息:', error);
+        console.warn('无法加载记住的用户信息:', error)
       }
     },
 
     clearRememberedUser() {
       try {
-        localStorage.removeItem('rememberedUser');
+        localStorage.removeItem('rememberedUser')
       } catch (error) {
-        console.warn('无法清除记住的用户信息:', error);
+        console.warn('无法清除记住的用户信息:', error)
       }
     }
   }
-};
+}
 </script>
 
 <style scoped>
 .login-container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 20px;
+  width: 100%;
 }
 
 .login-form {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e1e5e9;
-  margin-bottom: 24px;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  border: none;
 }
 
 .form-header {
@@ -394,7 +391,7 @@ export default {
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 300;
+  font-weight: 500;
   color: #333;
 }
 
@@ -408,13 +405,14 @@ export default {
 }
 
 .input-wrapper input {
-  width: 90%;
+  width: 100%;
   padding: 12px 16px 12px 44px;
   border: 2px solid #e1e5e9;
   border-radius: 12px;
   font-size: 16px;
   transition: all 0.3s ease;
   background: #fff;
+  box-sizing: border-box;
 }
 
 .input-wrapper input:focus {
@@ -498,7 +496,7 @@ export default {
 .checkmark {
   width: 16px;
   height: 16px;
-  border: 4px solid #e1e5e9;
+  border: 2px solid #e1e5e9;
   border-radius: 3px;
   position: relative;
   transition: all 0.3s ease;
@@ -595,7 +593,7 @@ export default {
 }
 
 .divider span {
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
   padding: 0 16px;
   color: #999;
   font-size: 12px;
@@ -692,22 +690,6 @@ export default {
 
 /* 响应式设计 */
 @media (max-width: 480px) {
-  .login-container {
-    padding: 16px;
-  }
-  
-  .login-form {
-    padding: 24px;
-  }
-  
-  .form-header h3 {
-    font-size: 20px;
-  }
-  
-  .icon {
-    font-size: 40px;
-  }
-  
   .form-options {
     flex-direction: column;
     gap: 12px;
@@ -716,11 +698,6 @@ export default {
   
   .quick-login {
     grid-template-columns: 1fr;
-  }
-  
-  .login-stats {
-    grid-template-columns: 1fr;
-    gap: 16px;
   }
 }
 </style>

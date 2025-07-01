@@ -1,6 +1,6 @@
 class ApiClient {
   constructor() {
-    this.baseURL = process.env.VUE_APP_API_URL || 'http://localhost:8080';
+    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
   }
 
   async request(url, options = {}) {
@@ -34,7 +34,7 @@ class ApiClient {
       console.error('API请求错误:', error);
       return {
         success: false,
-        message: error.message || '网络错误，请检查连接'
+        message: error.message || '网络错误,请检查连接'
       };
     }
   }
