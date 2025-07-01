@@ -1,4 +1,4 @@
-package com.medical.qna.medical_qna_system.dto;
+package com.medical.qna.medical_qna_system.dto.request;
 
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;

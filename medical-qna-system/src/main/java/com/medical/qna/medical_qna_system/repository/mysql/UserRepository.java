@@ -1,7 +1,8 @@
 package com.medical.qna.medical_qna_system.repository.mysql;
 
+import com.medical.qna.medical_qna_system.common.enums.UserRole;
 import com.medical.qna.medical_qna_system.entity.mysql.User;
-import com.medical.qna.medical_qna_system.enums.UserRole;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

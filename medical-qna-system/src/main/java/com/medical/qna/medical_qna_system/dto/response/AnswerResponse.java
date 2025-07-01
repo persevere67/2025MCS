@@ -1,4 +1,5 @@
-package com.medical.qna.medical_qna_system.dto;
+package com.medical.qna.medical_qna_system.dto.response;
+
 
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -6,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
 
 @Data
 @AllArgsConstructor

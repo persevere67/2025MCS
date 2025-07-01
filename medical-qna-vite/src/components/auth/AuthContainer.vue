@@ -109,167 +109,59 @@
 </template>
 
 <script>
-import LoginForm from './LoginForm.vue'
-import RegisterForm from './RegisterForm.vue'
+import api from '@/utils/api';
 
-export default {
-  name: 'AuthContainer',
-  components: {
-    LoginForm,
-    RegisterForm
-  },
-  emits: ['auth-success'],
+export class AuthManager {
+  constructor() {
+    this.user = null;
+    this.isAuthenticated = false;
+  }
 
-  data() {
-    return {
-      currentView: 'login',
-      slideDirection: 'slide-left',
-      showModal: false,
-      modalTitle: '',
-      modalContent: '',
-      features: [
-        {
-          id: 1,
-          icon: '🩺',
-          title: '专业医疗咨询',
-          description: '获得专业医生的建议和指导'
-        },
-        {
-          id: 2,
-          icon: '🤖',
-          title: 'AI智能助手',
-          description: '24/7在线智能医疗问答服务'
-        },
-        {
-          id: 3,
-          icon: '📊',
-          title: '健康档案',
-          description: '个人健康数据管理和追踪'
-        },
-        {
-          id: 4,
-          icon: '🔐',
-          title: '隐私保护',
-          description: '严格保护用户隐私和数据安全'
+  async checkAuthStatus() {
+    try {
+      const result = await api.auth.checkSession();
+      if (result.success && result.data.authenticated) {
+        this.isAuthenticated = true;
+        const userResult = await api.auth.getCurrentUser();
+        if (userResult.success) {
+          this.user = userResult.data;
         }
-      ]
+        return true;
+      } else {
+        this.isAuthenticated = false;
+        this.user = null;
+        return false;
+      }
+    } catch (error) {
+      console.error('检查登录状态失败:', error);
+      this.isAuthenticated = false;
+      this.user = null;
+      return false;
     }
-  },
+  }
 
-  computed: {
-    tabIndicatorStyle() {
-      return {
-        transform: this.currentView === 'login' ? 'translateX(0)' : 'translateX(100%)'
-      }
-    }
-  },
+  setUser(userData) {
+    this.user = userData;
+    this.isAuthenticated = true;
+  }
 
-  mounted() {
-    // 检查URL参数或localStorage来确定初始视图
-    this.checkInitialView()
-  },
+  clearUser() {
+    this.user = null;
+    this.isAuthenticated = false;
+  }
 
-  methods: {
-    switchView(view) {
-      if (view === this.currentView) return
-      
-      this.slideDirection = view === 'register' ? 'slide-left' : 'slide-right'
-      this.currentView = view
-      
-      // 更新URL（如果使用router）
-      this.updateUrl(view)
-    },
-
-    checkInitialView() {
-      // 检查URL参数
-      const urlParams = new URLSearchParams(window.location.search)
-      const view = urlParams.get('view')
-      
-      if (view === 'register') {
-        this.currentView = 'register'
-      }
-      
-      // 或者检查localStorage中的偏好设置
-      try {
-        const savedView = localStorage.getItem('preferredAuthView')
-        if (savedView && ['login', 'register'].includes(savedView)) {
-          this.currentView = savedView
-        }
-      } catch (error) {
-        console.warn('无法读取保存的视图偏好:', error)
-      }
-    },
-
-    updateUrl(view) {
-      // 更新URL但不刷新页面
-      const url = new URL(window.location)
-      url.searchParams.set('view', view)
-      window.history.replaceState({}, '', url)
-      
-      // 保存用户偏好
-      try {
-        localStorage.setItem('preferredAuthView', view)
-      } catch (error) {
-        console.warn('无法保存视图偏好:', error)
-      }
-    },
-
-    handleLoginSuccess(userData) {
-      console.log('登录成功:', userData)
-      this.$emit('auth-success', {
-        type: 'login',
-        user: userData
-      })
-    },
-
-    handleRegisterSuccess(userData) {
-      console.log('注册成功:', userData)
-      // 注册成功后自动切换到登录页面
-      setTimeout(() => {
-        this.switchView('login')
-      }, 2000)
-    },
-
-    showPrivacy() {
-      this.modalTitle = '隐私政策'
-      this.modalContent = `
-        我们重视您的隐私，承诺保护您的个人信息安全。
-        您的医疗咨询数据将严格保密，仅用于提供医疗建议服务。
-        我们采用最高级别的加密技术来保护您的数据传输和存储。
-      `
-      this.showModal = true
-    },
-
-    showTerms() {
-      this.modalTitle = '服务条款'
-      this.modalContent = `
-        欢迎使用医疗问答系统。
-        本平台提供的建议仅供参考，不能替代专业医疗诊断。
-        如有紧急情况，请立即联系当地医疗机构。
-        使用本服务即表示您同意遵守相关使用规范。
-      `
-      this.showModal = true
-    },
-
-    showHelp() {
-      this.modalTitle = '使用帮助'
-      this.modalContent = `
-        如需帮助，请联系我们：
-        
-        📧 邮箱：support@medical-qa.com
-        📞 电话：400-123-4567
-        💬 在线客服：工作日 9:00-18:00
-        
-        常见问题请查看我们的帮助文档。
-      `
-      this.showModal = true
-    },
-
-    closeModal() {
-      this.showModal = false
+  async logout() {
+    try {
+      await api.auth.logout();
+    } catch (error) {
+      console.error('登出失败:', error);
+    } finally {
+      this.clearUser();
     }
   }
 }
+
+export const authManager = new AuthManager();
 </script>
 
 <style scoped>
