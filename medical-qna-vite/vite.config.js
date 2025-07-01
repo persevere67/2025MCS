@@ -10,4 +10,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    outDir: '../medical-qna-system/src/main/resources/static/', 
+    assetsDir: process.env.NODE_ENV === 'production' ? 'static/' : '', 
+  },
+  base: process.env.NODE_ENV === 'production' ? '/static/' : '/',
 })
