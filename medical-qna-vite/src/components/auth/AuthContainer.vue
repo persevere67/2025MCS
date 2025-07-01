@@ -346,7 +346,7 @@ export default {
 }
 
 .info-panel {
-  padding: 60px 40px;
+  padding: 20px 40px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -354,7 +354,7 @@ export default {
 }
 
 .brand {
-  margin-bottom: 60px;
+  margin-bottom: 100px;
 }
 
 .brand-icon {
@@ -430,12 +430,12 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 40px;
+  padding: 60px;
   position: relative;
 }
 
 .form-container {
-  max-width: 400px;
+  max-width: 800px;
   margin: 0 auto;
   width: 100%;
 }
