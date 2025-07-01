@@ -9,7 +9,7 @@ public class CrosConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173") // 前端开发服务器地址
+                .allowedOrigins("http://0.0.0.0:5173") 
                 .allowedMethods("GET", "HEAD", "POST", "DELETE", "OPTIONS", "PUT")
                 .allowCredentials(true)
                 .maxAge(3600)
