@@ -15,6 +15,7 @@
         <header class="title-bar">
           <img :src="logo" alt="Logo" class="logo">
           <span>神也吃拼好饭医药问答系统</span>
+          <button @click="logout" class="logout-btn">退出登录</button>
         </header>
 
         <!-- 提问卡片 -->
@@ -37,6 +38,8 @@
 <script>
 import HistoryPage from './HistoryPage.vue';
 import logo from '../../assets/logo.png';
+import { useAuthStore } from '../../stores/auth';
+import { useRouter } from 'vue-router';
 export default {
   components: {
     HistoryPage
@@ -71,6 +74,16 @@ export default {
         }
       );
       this.question = "";
+    },
+    logout() {
+      const authStore = useAuthStore();
+      const router = useRouter();
+      
+      // 清除登录状态
+      authStore.logout();
+      
+      // 跳转到登录页
+      router.push('/auth');
     }
   }
 };
@@ -137,6 +150,7 @@ export default {
 .title-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between; 
   font-size: 24px;
   font-weight: bold;
   color: #4a4a4a;
@@ -146,6 +160,21 @@ export default {
 .logo {
   width: 40px;
   margin-right: 10px;
+}
+
+.logout-btn {
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.3s;
+}
+
+.logout-btn:hover {
+  background: #ff5252;
 }
 
 /* 提问卡片 */
