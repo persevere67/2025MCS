@@ -75,18 +75,18 @@ export default {
       );
       this.question = "";
     },
-    logout() {
+    async logout() {
       const authStore = useAuthStore();
-      const router = useRouter();
-      
-      // 清除登录状态
-      authStore.logout();
-      
-      // 跳转到登录页
-      router.push('/auth');
+      try {
+        await authStore.logout();
+        this.$message.success("退出登录成功！");
+      }
+      catch (error) {
+        this.$message.error("退出登录失败！");
+      }
     }
   }
-};
+}
 </script>
 
 <style scoped>
