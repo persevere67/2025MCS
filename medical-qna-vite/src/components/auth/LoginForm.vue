@@ -111,15 +111,6 @@
       <div class="quick-login">
         <button 
           type="button" 
-          class="quick-btn demo-btn"
-          @click="quickLogin('demo')"
-          :disabled="loading"
-        >
-          <span class="quick-icon">🎭</span>
-          演示账号
-        </button>
-        <button 
-          type="button" 
           class="quick-btn guest-btn"
           @click="quickLogin('guest')"
           :disabled="loading"
@@ -600,9 +591,8 @@ export default {
 }
 
 .quick-login {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: flex;
+  justify-content: center;
   margin-bottom: 24px;
 }
 
@@ -634,11 +624,6 @@ export default {
 
 .quick-icon {
   font-size: 16px;
-}
-
-.demo-btn:hover:not(:disabled) {
-  border-color: #f39c12;
-  color: #f39c12;
 }
 
 .guest-btn:hover:not(:disabled) {

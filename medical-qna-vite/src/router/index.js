@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomePage from '../components/auth/HomePage.vue';
-import LoginPage from '../pages/LoginPage.vue';
-import RegisterPage from '../pages/RegisterPage.vue';
 import HistoryPage from '../components/user/HistoryPage.vue';
 import DrugDetailPage from '../components/user/DrugDetailPage.vue';
 import QAPage from '../components/user/QAPage.vue';
@@ -10,8 +8,6 @@ import AdminPage from '../components/admin/AdminPage.vue';
 
 const routes = [
   { path: '/', component: HomePage, alias: '/home' },
-  { path: '/login', component: LoginPage },
-  { path: '/register', component: RegisterPage },
   { path: '/history', component: HistoryPage },
   { path: '/drugs/:drugId', component: DrugDetailPage },
   { path: '/qna', component: QAPage },
