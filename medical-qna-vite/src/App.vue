@@ -6,15 +6,19 @@
   </div>
 </template>
 
-<script setup>
+<script>
 import Header from './components/common/Header.vue';
 import Footer from './components/common/Footer.vue';
+
+export default {
+  components: { Header, Footer },
+};
 </script>
 
 <style>
-#app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
 }
 </style>
