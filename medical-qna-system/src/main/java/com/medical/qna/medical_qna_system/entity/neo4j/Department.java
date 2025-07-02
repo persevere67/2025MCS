@@ -1,12 +1,13 @@
 package com.medical.qna.medical_qna_system.entity.neo4j;
 
+import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
-import lombok.Data;
 
-@Node
-@Data
+import java.util.Set;
+
+@Node("Department")
 public class Department {
     @Id
     @GeneratedValue
@@ -32,13 +33,10 @@ public class Department {
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-
     public Set<Department> getSubDepartments() { return subDepartments; }
     public void setSubDepartments(Set<Department> subDepartments) { this.subDepartments = subDepartments; }
-
     public Set<Disease> getDiseasesBelongingHere() { return diseasesBelongingHere; }
     public void setDiseasesBelongingHere(Set<Disease> diseasesBelongingHere) { this.diseasesBelongingHere = diseasesBelongingHere; }
 }

@@ -1,13 +1,13 @@
 package com.medical.qna.medical_qna_system.entity.neo4j;
 
+import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
 import java.util.Set;
 
-@Node
-@Data
+@Node("Symptom")
 public class Symptom {
     @Id
     @GeneratedValue
@@ -28,10 +28,8 @@ public class Symptom {
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-
     public Set<Disease> getDiseasesWithThisSymptom() { return diseasesWithThisSymptom; }
     public void setDiseasesWithThisSymptom(Set<Disease> diseasesWithThisSymptom) { this.diseasesWithThisSymptom = diseasesWithThisSymptom; }
 }

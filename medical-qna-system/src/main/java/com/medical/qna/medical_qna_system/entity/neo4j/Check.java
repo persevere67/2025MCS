@@ -28,10 +28,8 @@ public class Check {
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-
     public Set<Disease> getDiseasesRequiringCheck() { return diseasesRequiringCheck; }
     public void setDiseasesRequiringCheck(Set<Disease> diseasesRequiringCheck) { this.diseasesRequiringCheck = diseasesRequiringCheck; }
 }

@@ -28,10 +28,8 @@ public class Producer {
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-
     public Set<Drug> getProducedDrugs() { return producedDrugs; }
     public void setProducedDrugs(Set<Drug> producedDrugs) { this.producedDrugs = producedDrugs; }
 }
