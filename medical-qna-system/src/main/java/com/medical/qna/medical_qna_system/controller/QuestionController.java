@@ -52,7 +52,7 @@ public class QuestionController {
         HttpSession session = httpRequest.getSession(false);
         User currentUser = sessionManager.getCurrentUser(session);
         
-        // 简单返回提示信息，后续可以扩展为真正的历史查询
+
         String message = String.format("用户 %s 的问答历史功能正在开发中...", currentUser.getUsername());
         
         return ResponseEntity.ok(ApiResponse.success("获取成功", message));
