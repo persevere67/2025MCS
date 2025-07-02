@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import HomePage from '../components/auth/HomePage.vue';
+import HomePage from '../components/HomePage.vue';
 import DrugDetailPage from '../components/user/DrugDetailPage.vue';
 import QAPage from '../components/user/QAPage.vue';
 import Authcontainer from '../components/auth/Authcontainer.vue';
