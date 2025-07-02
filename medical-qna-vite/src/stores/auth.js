@@ -28,15 +28,21 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
-  const logout = () => {
-    user.value = null
-    isAuthenticated.value = false
-    // 清除本地存储
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('userData')
-    router.push('/auth') // 修改为 /auth 而不是 /login
+  const logout = async() => {
+    try {
+      await api.post('/api/auth/logout')
+    } 
+    catch (error) {
+      console.log(error)
+    }
+    finally {
+      user.value = null
+      isAuthenticated.value = false
+      localStorage.removeItem('authToken')
+      localStorage.removeItem('userData')
+      router.push('/auth')
+    }
   }
-
   // 初始化方法
   const initialize = () => {
     const token = localStorage.getItem('authToken')
