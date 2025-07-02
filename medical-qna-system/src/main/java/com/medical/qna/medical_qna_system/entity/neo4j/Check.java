@@ -7,21 +7,21 @@ import org.springframework.data.neo4j.core.schema.Relationship;
 
 import java.util.Set;
 
-@Node("Symptom")
-public class Symptom {
+@Node("Check")
+public class Check {
     @Id
     @GeneratedValue
     private Long id;
 
-    private String name; // 症状名称
+    private String name; // 检查项目名称
 
-    // 关系：一个症状可能由多种疾病引起 (has_symptom 的反向)
-    @Relationship(type = "has_symptom", direction = Relationship.Direction.INCOMING)
-    private Set<Disease> diseasesWithThisSymptom;
+    // 关系：检查项目是某些疾病所需的 (need_check 的反向)
+    @Relationship(type = "need_check", direction = Relationship.Direction.INCOMING)
+    private Set<Disease> diseasesRequiringCheck;
 
-    public Symptom() {}
+    public Check() {}
 
-    public Symptom(String name) {
+    public Check(String name) {
         this.name = name;
     }
 
@@ -32,6 +32,6 @@ public class Symptom {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
-    public Set<Disease> getDiseasesWithThisSymptom() { return diseasesWithThisSymptom; }
-    public void setDiseasesWithThisSymptom(Set<Disease> diseasesWithThisSymptom) { this.diseasesWithThisSymptom = diseasesWithThisSymptom; }
+    public Set<Disease> getDiseasesRequiringCheck() { return diseasesRequiringCheck; }
+    public void setDiseasesRequiringCheck(Set<Disease> diseasesRequiringCheck) { this.diseasesRequiringCheck = diseasesRequiringCheck; }
 }
