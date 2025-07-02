@@ -77,9 +77,11 @@ export default {
     },
     async logout() {
       const authStore = useAuthStore();
+      const router = useRouter();
       try {
         await authStore.logout();
         this.$message.success("退出登录成功！");
+        router.push("/");
       }
       catch (error) {
         this.$message.error("退出登录失败！");
