@@ -252,7 +252,7 @@ export default {
           } else {
             this.clearRememberedUser()
           }
-          
+          this.$router.push("/qna")
           this.$emit('login-success', result.data)
         } else {
           throw new Error(result.message)
