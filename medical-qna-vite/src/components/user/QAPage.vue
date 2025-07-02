@@ -36,10 +36,11 @@
 </template>
 
 <script>
+// QAPage.vue 的 <script> 部分
+
 import HistoryPage from './HistoryPage.vue';
 import logo from '../../assets/logo.png';
-import { useAuthStore } from '../../stores/auth';
-import { useRouter } from 'vue-router';
+
 export default {
   components: {
     HistoryPage
@@ -50,7 +51,8 @@ export default {
       logo: logo,
       question: "",
       answer: "",
-      historyList: []
+      historyList: [],
+      isLoading: false // 添加一个加载状态，防止重复提交
     };
   },
   methods: {
@@ -61,32 +63,60 @@ export default {
       this.question = item.title;
       this.answer = item.content;
     },
-    submitQuestion() {
+    async submitQuestion() { // 【改动1】: 将方法改为异步 async
       if (!this.question.trim()) {
         alert("请输入问题！");
         return;
       }
-      this.answer = "这是针对您的问题的智能回答：" + this.question;
-      this.historyList.push(
-        {
-          title: this.question,
-          content: this.answer
-        }
-      );
-      this.question = "";
-    },
-    async logout() {
-      const authStore = useAuthStore();
+      if (this.isLoading) return; // 如果正在加载，则不执行
+
+      this.isLoading = true;
+      this.answer = ""; // 清空之前的回答
+      const currentQuestion = this.question; // 保存当前问题
+      this.question = ""; // 清空输入框
+      
       try {
-        await authStore.logout();
-        this.$message.success("退出登录成功！");
-      }
-      catch (error) {
-        this.$message.error("退出登录失败！");
+        // 【改动2】: 使用fetch API调用后端
+        const response = await fetch('http://127.0.0.1:8000/ask', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ question: currentQuestion }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // 【改动3】: 处理流式响应
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            break;
+          }
+          const chunk = decoder.decode(value);
+          this.answer += chunk; // 将收到的每个文字块追加到回答中
+        }
+        
+        // 流结束后，将完整的问答存入历史记录
+        this.historyList.push({
+          title: currentQuestion,
+          content: this.answer
+        });
+
+      } catch (error) {
+        console.error("Fetch error:", error);
+        this.answer = "抱歉，连接后端服务时发生错误。";
+      } finally {
+        this.isLoading = false; // 结束加载状态
       }
     }
   }
-}
+};
 </script>
 
 <style scoped>
