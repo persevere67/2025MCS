@@ -9,7 +9,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 模拟登录API
   const login = async (credentials) => {
-    // 这里应该是调用实际的登录API
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         if (credentials.username && credentials.password) {
@@ -18,6 +17,9 @@ export const useAuthStore = defineStore('auth', () => {
             token: 'mock-token'
           }
           isAuthenticated.value = true
+          // 添加本地存储
+          localStorage.setItem('authToken', 'mock-token')
+          localStorage.setItem('userData', JSON.stringify(user.value))
           resolve()
         } else {
           reject(new Error('用户名或密码错误'))
@@ -29,13 +31,27 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = () => {
     user.value = null
     isAuthenticated.value = false
-    router.push('/login')
+    // 清除本地存储
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('userData')
+    router.push('/auth') // 修改为 /auth 而不是 /login
+  }
+
+  // 初始化方法
+  const initialize = () => {
+    const token = localStorage.getItem('authToken')
+    const userData = localStorage.getItem('userData')
+    if (token && userData) {
+      user.value = JSON.parse(userData)
+      isAuthenticated.value = true
+    }
   }
 
   return {
     user,
     isAuthenticated,
     login,
-    logout
+    logout,
+    initialize // 确保导出 initialize 方法
   }
 })
