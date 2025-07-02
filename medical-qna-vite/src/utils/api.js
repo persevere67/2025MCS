@@ -1,6 +1,9 @@
+const ip = 'http://localhost:8080';
+
+
 class ApiClient {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    this.baseURL = ip; // 设置基础URL
   }
 
   async request(url, options = {}) {
