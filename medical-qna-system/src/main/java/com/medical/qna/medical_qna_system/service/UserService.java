@@ -1,7 +1,6 @@
 package com.medical.qna.medical_qna_system.service;
 
 import com.medical.qna.medical_qna_system.dto.request.RegisterRequest;
-import com.medical.qna.medical_qna_system.dto.request.UpdateUserRequest;
 import com.medical.qna.medical_qna_system.entity.mysql.User;
 
 import java.util.Optional;
@@ -17,11 +16,6 @@ public interface UserService {
      * 根据用户名获取用户
      */
     Optional<User> getUserByUsername(String username);
-    
-    /**
-     * 更新用户信息
-     */
-    User updateUser(Long userId, UpdateUserRequest request);
     
     /**
      * 检查用户名是否存在
