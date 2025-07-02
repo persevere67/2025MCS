@@ -1,14 +1,15 @@
 package com.medical.qna.medical_qna_system.entity.neo4j;
 
-import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
+import lombok.Data;
 
 import java.util.Set;
 import java.util.List; // cure_way 可能是列表
 
-@Node("Disease")
+@Node
+@Data
 public class Disease {
     @Id
     @GeneratedValue
