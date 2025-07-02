@@ -1,11 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import HomePage from '../pages/HomePage.vue';
+import HomePage from '../components/auth/HomePage.vue';
 import LoginPage from '../pages/LoginPage.vue';
 import RegisterPage from '../pages/RegisterPage.vue';
-import HistoryPage from '../pages/HistoryPage.vue';
-import DrugDetailPage from '../pages/DrugDetailPage.vue';
-import QAPage from '../pages/QAPage.vue';
+import HistoryPage from '../components/user/HistoryPage.vue';
+import DrugDetailPage from '../components/user/DrugDetailPage.vue';
+import QAPage from '../components/user/QAPage.vue';
 import Authcontainer from '../components/auth/Authcontainer.vue';
+import AdminPage from '../components/admin/AdminPage.vue';
 
 const routes = [
   { path: '/', component: HomePage, alias: '/home' },
@@ -15,6 +16,7 @@ const routes = [
   { path: '/drugs/:drugId', component: DrugDetailPage },
   { path: '/qna', component: QAPage },
   { path: '/auth', component: Authcontainer },
+  { path: '/admin', component: AdminPage}
 ];
 
 const router = createRouter({

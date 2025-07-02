@@ -4,10 +4,6 @@
       <div class="nav-left">
         <router-link to="/" class="nav-link">神也吃拼好饭医疗问答系统</router-link>
       </div>
-      <div class="nav-right">
-        <router-link to="/login" class="nav-link">登录</router-link>
-        <router-link to="/register" class="nav-link">注册</router-link>
-      </div>
     </nav>
   </header>
 </template>
