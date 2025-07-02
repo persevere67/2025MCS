@@ -165,9 +165,23 @@ export default {
 
   mounted() {
     this.loadRememberedUser()
+    this.checkSession()
   },
 
   methods: {
+    async checkSession() {
+      try {
+        const {data} = await api.get('/api/auth/check')
+        if (data.authenticated) {
+          this.$router.push('/qna')
+        }
+      } catch (error) {
+        console.error('检查会话失败:', error)
+      }
+    },
+
+
+
     showMessage(text, type = 'error') {
       this.message = { text, type }
       setTimeout(() => {
