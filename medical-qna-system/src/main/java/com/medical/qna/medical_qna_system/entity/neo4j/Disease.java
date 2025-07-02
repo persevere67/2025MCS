@@ -6,102 +6,110 @@ import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
 import java.util.Set;
+import java.util.List; // cure_way 可能是列表
 
 @Node("Disease")
 public class Disease {
     @Id
     @GeneratedValue
     private Long id;
-    
-    private String name;
-    private String desc;
-    private String diagnosis;
-    private String insurance_covered;
-    private String prevalence_rate;
-    private String susceptible_population;
-    private String transmission_mode;
-    private String nursing;
-    private String treatment_duration;
-    private String cure_rate;
-    private String treatment_cost;
-    
-    @Relationship(type = "HAS_SYMPTOM", direction = Relationship.Direction.OUTGOING)
+
+    private String name; // 疾病名称
+    private String desc; // 描述
+    private String prevent; // 预防方法
+    private String cause; // 病因
+    private String easy_get; // 易感人群
+    private String cure_lasttime; // 治疗持续时间
+    private String cured_prob; // 治愈概率
+    private List<String> cure_way; // 治疗方法，根据Python代码可能是列表
+
+    // 关系
+    @Relationship(type = "has_symptom", direction = Relationship.Direction.OUTGOING)
     private Set<Symptom> symptoms;
-    
-    @Relationship(type = "BELONGS_TO", direction = Relationship.Direction.OUTGOING)
-    private Set<Department> departments;
-    
-    @Relationship(type = "TREATED_BY", direction = Relationship.Direction.OUTGOING)
-    private Set<Treatment> treatments;
-    
-    @Relationship(type = "GOOD_FOR", direction = Relationship.Direction.OUTGOING)
-    private Set<Food> goodFoods;
-    
-    @Relationship(type = "BAD_FOR", direction = Relationship.Direction.OUTGOING)
-    private Set<Food> badFoods;
-    
-    @Relationship(type = "HAS_COMPLICATION", direction = Relationship.Direction.OUTGOING)
-    private Set<Complication> complications;
-    
+
+    @Relationship(type = "acompany_with", direction = Relationship.Direction.OUTGOING)
+    private Set<Disease> acompanyDiseases; // 并发症，指向其他疾病节点
+
+    @Relationship(type = "belongs_to", direction = Relationship.Direction.OUTGOING)
+    private Set<Department> departments; // 所属科室
+
+    @Relationship(type = "recommand_drug", direction = Relationship.Direction.OUTGOING)
+    private Set<Drug> recommandDrugs; // 推荐药品
+
+    @Relationship(type = "common_drug", direction = Relationship.Direction.OUTGOING)
+    private Set<Drug> commonDrugs; // 常用药品
+
+    @Relationship(type = "no_eat", direction = Relationship.Direction.OUTGOING)
+    private Set<Food> noEatFoods; // 忌吃食物
+
+    @Relationship(type = "do_eat", direction = Relationship.Direction.OUTGOING)
+    private Set<Food> doEatFoods; // 宜吃食物
+
+    @Relationship(type = "recommand_eat", direction = Relationship.Direction.OUTGOING)
+    private Set<Food> recommandEatFoods; // 推荐食谱
+
+    @Relationship(type = "need_check", direction = Relationship.Direction.OUTGOING)
+    private Set<Check> checks; // 诊断检查
+
     // Constructors
     public Disease() {}
-    
+
     public Disease(String name) {
         this.name = name;
     }
-    
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-    
+
     public String getDesc() { return desc; }
     public void setDesc(String desc) { this.desc = desc; }
-    
-    public String getDiagnosis() { return diagnosis; }
-    public void setDiagnosis(String diagnosis) { this.diagnosis = diagnosis; }
-    
-    public String getInsurance_covered() { return insurance_covered; }
-    public void setInsurance_covered(String insurance_covered) { this.insurance_covered = insurance_covered; }
-    
-    public String getPrevalence_rate() { return prevalence_rate; }
-    public void setPrevalence_rate(String prevalence_rate) { this.prevalence_rate = prevalence_rate; }
-    
-    public String getSusceptible_population() { return susceptible_population; }
-    public void setSusceptible_population(String susceptible_population) { this.susceptible_population = susceptible_population; }
-    
-    public String getTransmission_mode() { return transmission_mode; }
-    public void setTransmission_mode(String transmission_mode) { this.transmission_mode = transmission_mode; }
-    
-    public String getNursing() { return nursing; }
-    public void setNursing(String nursing) { this.nursing = nursing; }
-    
-    public String getTreatment_duration() { return treatment_duration; }
-    public void setTreatment_duration(String treatment_duration) { this.treatment_duration = treatment_duration; }
-    
-    public String getCure_rate() { return cure_rate; }
-    public void setCure_rate(String cure_rate) { this.cure_rate = cure_rate; }
-    
-    public String getTreatment_cost() { return treatment_cost; }
-    public void setTreatment_cost(String treatment_cost) { this.treatment_cost = treatment_cost; }
-    
+
+    public String getPrevent() { return prevent; }
+    public void setPrevent(String prevent) { this.prevent = prevent; }
+
+    public String getCause() { return cause; }
+    public void setCause(String cause) { this.cause = cause; }
+
+    public String getEasy_get() { return easy_get; }
+    public void setEasy_get(String easy_get) { this.easy_get = easy_get; }
+
+    public String getCure_lasttime() { return cure_lasttime; }
+    public void setCure_lasttime(String cure_lasttime) { this.cure_lasttime = cure_lasttime; }
+
+    public String getCured_prob() { return cured_prob; }
+    public void setCured_prob(String cured_prob) { this.cured_prob = cured_prob; }
+
+    public List<String> getCure_way() { return cure_way; }
+    public void setCure_way(List<String> cure_way) { this.cure_way = cure_way; }
+
     public Set<Symptom> getSymptoms() { return symptoms; }
     public void setSymptoms(Set<Symptom> symptoms) { this.symptoms = symptoms; }
-    
+
+    public Set<Disease> getAcompanyDiseases() { return acompanyDiseases; }
+    public void setAcompanyDiseases(Set<Disease> acompanyDiseases) { this.acompanyDiseases = acompanyDiseases; }
+
     public Set<Department> getDepartments() { return departments; }
     public void setDepartments(Set<Department> departments) { this.departments = departments; }
-    
-    public Set<Treatment> getTreatments() { return treatments; }
-    public void setTreatments(Set<Treatment> treatments) { this.treatments = treatments; }
-    
-    public Set<Food> getGoodFoods() { return goodFoods; }
-    public void setGoodFoods(Set<Food> goodFoods) { this.goodFoods = goodFoods; }
-    
-    public Set<Food> getBadFoods() { return badFoods; }
-    public void setBadFoods(Set<Food> badFoods) { this.badFoods = badFoods; }
-    
-    public Set<Complication> getComplications() { return complications; }
-    public void setComplications(Set<Complication> complications) { this.complications = complications; }
+
+    public Set<Drug> getRecommandDrugs() { return recommandDrugs; }
+    public void setRecommandDrugs(Set<Drug> recommandDrugs) { this.recommandDrugs = recommandDrugs; }
+
+    public Set<Drug> getCommonDrugs() { return commonDrugs; }
+    public void setCommonDrugs(Set<Drug> commonDrugs) { this.commonDrugs = commonDrugs; }
+
+    public Set<Food> getNoEatFoods() { return noEatFoods; }
+    public void setNoEatFoods(Set<Food> noEatFoods) { this.noEatFoods = noEatFoods; }
+
+    public Set<Food> getDoEatFoods() { return doEatFoods; }
+    public void setDoEatFoods(Set<Food> doEatFoods) { this.doEatFoods = doEatFoods; }
+
+    public Set<Food> getRecommandEatFoods() { return recommandEatFoods; }
+    public void setRecommandEatFoods(Set<Food> recommandEatFoods) { this.recommandEatFoods = recommandEatFoods; }
+
+    public Set<Check> getChecks() { return checks; }
+    public void setChecks(Set<Check> checks) { this.checks = checks; }
 }

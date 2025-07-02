@@ -7,21 +7,21 @@ import org.springframework.data.neo4j.core.schema.Relationship;
 
 import java.util.Set;
 
-@Node("Symptom")
-public class Symptom {
+@Node("Producer")
+public class Producer {
     @Id
     @GeneratedValue
     private Long id;
 
-    private String name; // 症状名称
+    private String name; // 生产商名称
 
-    // 关系：一个症状可能由多种疾病引起 (has_symptom 的反向)
-    @Relationship(type = "has_symptom", direction = Relationship.Direction.INCOMING)
-    private Set<Disease> diseasesWithThisSymptom;
+    // 关系：生产商生产多种药品 (produces 的正向)
+    @Relationship(type = "produces", direction = Relationship.Direction.OUTGOING)
+    private Set<Drug> producedDrugs;
 
-    public Symptom() {}
+    public Producer() {}
 
-    public Symptom(String name) {
+    public Producer(String name) {
         this.name = name;
     }
 
@@ -32,6 +32,6 @@ public class Symptom {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
-    public Set<Disease> getDiseasesWithThisSymptom() { return diseasesWithThisSymptom; }
-    public void setDiseasesWithThisSymptom(Set<Disease> diseasesWithThisSymptom) { this.diseasesWithThisSymptom = diseasesWithThisSymptom; }
+    public Set<Drug> getProducedDrugs() { return producedDrugs; }
+    public void setProducedDrugs(Set<Drug> producedDrugs) { this.producedDrugs = producedDrugs; }
 }
