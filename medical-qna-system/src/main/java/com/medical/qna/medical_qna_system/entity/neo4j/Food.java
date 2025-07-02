@@ -1,13 +1,13 @@
 package com.medical.qna.medical_qna_system.entity.neo4j;
 
+import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
 import java.util.Set;
 
-@Node
-@Data
+@Node("Food")
 public class Food {
     @Id
     @GeneratedValue
@@ -36,16 +36,12 @@ public class Food {
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-
     public Set<Disease> getNoEatForDiseases() { return noEatForDiseases; }
     public void setNoEatForDiseases(Set<Disease> noEatForDiseases) { this.noEatForDiseases = noEatForDiseases; }
-
     public Set<Disease> getDoEatForDiseases() { return doEatForDiseases; }
     public void setDoEatForDiseases(Set<Disease> doEatForDiseases) { this.doEatForDiseases = doEatForDiseases; }
-
     public Set<Disease> getRecommandEatForDiseases() { return recommandEatForDiseases; }
     public void setRecommandEatForDiseases(Set<Disease> recommandEatForDiseases) { this.recommandEatForDiseases = recommandEatForDiseases; }
 }

@@ -36,16 +36,12 @@ public class Drug {
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-
     public Producer getProducer() { return producer; }
     public void setProducer(Producer producer) { this.producer = producer; }
-
     public Set<Disease> getCommonForDiseases() { return commonForDiseases; }
     public void setCommonForDiseases(Set<Disease> commonForDiseases) { this.commonForDiseases = commonForDiseases; }
-
     public Set<Disease> getRecommandForDiseases() { return recommandForDiseases; }
     public void setRecommandForDiseases(Set<Disease> recommandForDiseases) { this.recommandForDiseases = recommandForDiseases; }
 }
