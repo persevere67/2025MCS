@@ -72,6 +72,11 @@ public class AuthController {
     @GetMapping("/current")
     public ResponseEntity<ApiResponse<UserDto>> getCurrentUser(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
+
+        // 刷新会话有效期
+        if (session != null) {
+            session.setMaxInactiveInterval(1800); // 30分钟
+        }
         
         if (session == null || !sessionManager.isSessionValid(session)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
