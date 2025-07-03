@@ -1,24 +1,20 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import HomePage from '../pages/HomePage.vue';
-import LoginPage from '../pages/LoginPage.vue';
-import RegisterPage from '../pages/RegisterPage.vue';
-import HistoryPage from '../pages/HistoryPage.vue';
-import DrugDetailPage from '../pages/DrugDetailPage.vue';
-import QAPage from '../pages/QAPage.vue';
+import { createRouter, createWebHashHistory } from 'vue-router';
+import HomePage from '../components/HomePage.vue';
+import DrugDetailPage from '../components/user/DrugDetailPage.vue';
+import QAPage from '../components/user/QAPage.vue';
 import Authcontainer from '../components/auth/Authcontainer.vue';
+import AdminPage from '../components/admin/AdminPage.vue';
 
 const routes = [
   { path: '/', component: HomePage, alias: '/home' },
-  { path: '/login', component: LoginPage },
-  { path: '/register', component: RegisterPage },
-  { path: '/history', component: HistoryPage },
   { path: '/drugs/:drugId', component: DrugDetailPage },
   { path: '/qna', component: QAPage },
   { path: '/auth', component: Authcontainer },
+  { path: '/admin', component: AdminPage}
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes,
 });
 

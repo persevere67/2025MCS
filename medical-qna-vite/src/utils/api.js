@@ -1,4 +1,5 @@
 const ip = 'http://localhost:8080';
+import axios from 'axios';
 
 
 class ApiClient {
@@ -70,4 +71,35 @@ class ApiClient {
 }
 
 const api = new ApiClient();
+
+const api = axios.create({
+  baseURL: process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080',
+  withCredentials: true // 必须设置为 true 以发送 cookies
+})
+
+// 请求拦截器
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('authToken')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+}, error => {
+  return Promise.reject(error)
+})
+
+// 响应拦截器
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      // 未授权，清除认证状态并跳转到登录页
+      const authStore = useAuthStore()
+      authStore.logout()
+    }
+    return Promise.reject(error)
+  }
+)
+
+
 export default api;
