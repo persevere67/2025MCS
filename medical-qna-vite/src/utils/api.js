@@ -1,65 +1,67 @@
 const ip = 'http://localhost:8080';
 import axios from 'axios';
 
+axios.defaults.baseURL = ip;
+
+axios.interceptors.request.use(config => {
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 class ApiClient {
-  constructor() {
-    this.baseURL = ip; // 设置基础URL
-  }
-
-  async request(url, options = {}) {
-    const config = {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      },
-      ...options
-    };
-
+  async post(url, data = {}) {
     try {
-      const response = await fetch(`${this.baseURL}${url}`, config);
-      const result = await response.json();
-
-      if (response.ok && result.code === '0000') {
+      const response = await axios.post(url, data);
+      if (response.data.code === '0000') {
         return {
           success: true,
-          data: result.data,
-          message: result.message
+          data: response.data.data,
+          message: response.data.message
         };
       } else {
         return {
           success: false,
-          message: result.message || `请求失败: ${response.status}`,
-          code: result.code
+          message: response.data.message
         };
       }
     } catch (error) {
-      console.error('API请求错误:', error);
       return {
         success: false,
-        message: error.message || '网络错误,请检查连接'
+        message: error.message || '网络错误'
       };
     }
   }
 
   async get(url, params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    const fullUrl = queryString ? `${url}?${queryString}` : url;
-    return this.request(fullUrl, { method: 'GET' });
-  }
-
-  async post(url, data = {}) {
-    return this.request(url, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
+    try {
+      const response = await axios.get(url, { params });
+      if (response.data.code === '0000') {
+        return {
+          success: true,
+          data: response.data.data,
+          message: response.data.message
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '网络错误'
+      };
+    }
   }
 
   auth = {
     login: (credentials) => this.post('/api/auth/login', credentials),
-    register: (userData) => this.post('/api/auth/register', userData),
     logout: () => this.post('/api/auth/logout'),
+    register: (userData) => this.post('/api/auth/register', userData),
     getCurrentUser: () => this.get('/api/auth/current'),
     checkSession: () => this.get('/api/auth/check')
   };
