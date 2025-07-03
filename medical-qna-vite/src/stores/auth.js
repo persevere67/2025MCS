@@ -10,23 +10,16 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 模拟登录API
   const login = async (credentials) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (credentials.username && credentials.password) {
-          user.value = {
-            username: credentials.username,
-            token: 'mock-token'
-          }
-          isAuthenticated.value = true
-          // 添加本地存储
-          localStorage.setItem('authToken', 'mock-token')
-          localStorage.setItem('userData', JSON.stringify(user.value))
-          resolve()
-        } else {
-          reject(new Error('用户名或密码错误'))
-        }
-      }, 500)
-    })
+    const res = await api.auth.login(credentials)
+    if(res.sucsess){
+      user.value = res.data
+      isAuthenticated.value = true
+      localStorage.setItem('authToken', res.token)
+      localStorage.setItem('userData', JSON.stringify(res.data))
+    }
+    else {
+        console.log('登录失败')
+    }
   }
 
   const logout = async() => {
