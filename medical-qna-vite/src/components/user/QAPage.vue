@@ -3,9 +3,9 @@
     <div class="qa-container">
       <!-- 左侧历史记录 -->
       <HistoryPage 
-      :historyList="historyList"
-      @delete="deleteHistory"
-      @select="handleSelectHistory"
+        :historyList="historyList"
+        @delete="deleteHistory"
+        @select="handleSelectHistory"
       />
 
       <!-- 右侧问答部分 -->
@@ -22,13 +22,21 @@
         <div class="qa-card">
           <h2>提问窗口</h2>
           <textarea v-model="question" placeholder="请输入您的问题..." class="input-area"></textarea>
-          <button @click="submitQuestion" class="submit-btn">提交</button>
+          <button @click="submitQuestion" :disabled="isLoading" class="submit-btn">
+            {{ isLoading ? '处理中...' : '提交' }}
+          </button>
         </div>
 
         <!-- 回答展示 -->
         <div v-if="answer" class="answer-card">
           <h3>系统回答</h3>
-          <p>{{ answer }}</p>
+          <div class="answer-content">{{ answer }}</div>
+        </div>
+
+        <!-- 加载指示器 -->
+        <div v-if="isLoading" class="loading-indicator">
+          <div class="spinner"></div>
+          <span>正在思考中...</span>
         </div>
       </div>
     </div>
@@ -38,8 +46,8 @@
 <script>
 import HistoryPage from './HistoryPage.vue';
 import logo from '../../assets/logo.png';
-import { useAuthStore } from '../../stores/auth';
-import { useRouter } from 'vue-router';
+import api from '@/utils/api';
+
 export default {
   components: {
     HistoryPage
@@ -50,41 +58,152 @@ export default {
       logo: logo,
       question: "",
       answer: "",
-      historyList: []
+      historyList: [],
+      isLoading: false
     };
   },
+  mounted() {
+    this.loadHistory();
+  },
   methods: {
-    deleteHistory(index) {
-      this.historyList.splice(index, 1);
+    async loadHistory() {
+      try {
+        const response = await api.get('/api/question/history');
+        if (response.data.success) {
+          this.historyList = response.data.data.map(item => ({
+            id: item.id,
+            title: item.question,
+            content: item.answer,
+            createTime: item.createTime
+          }));
+        }
+      } catch (error) {
+        console.error('加载历史记录失败:', error);
+      }
     },
+
+    async deleteHistory(index) {
+      try {
+        const historyItem = this.historyList[index];
+        if (historyItem.id) {
+          const response = await api.delete(`/api/question/history/${historyItem.id}`);
+          if (response.data.success) {
+            this.historyList.splice(index, 1);
+          } else {
+            alert('删除失败: ' + response.data.message);
+          }
+        } else {
+          // 本地记录，直接删除
+          this.historyList.splice(index, 1);
+        }
+      } catch (error) {
+        console.error('删除历史记录失败:', error);
+        alert('删除失败');
+      }
+    },
+
     handleSelectHistory(item) {
       this.question = item.title;
       this.answer = item.content;
     },
-    submitQuestion() {
+
+    async submitQuestion() {
       if (!this.question.trim()) {
         alert("请输入问题！");
         return;
       }
-      this.answer = "这是针对您的问题的智能回答：" + this.question;
-      this.historyList.push(
-        {
-          title: this.question,
-          content: this.answer
-        }
-      );
+      if (this.isLoading) return;
+
+      this.isLoading = true;
+      this.answer = "";
+      const currentQuestion = this.question;
       this.question = "";
-    },
-    async logout() {
-      const authStore = useAuthStore();
-      const router = useRouter();
+      
       try {
-        await authStore.logout();
-        this.$message.success("退出登录成功！");
-        router.push("/");
+        // 使用EventSource接收流式响应
+        const eventSource = new EventSource(
+          `/api/question/ask`, 
+          {
+            withCredentials: true
+          }
+        );
+
+        // 发送问题到后端
+        const response = await fetch('/api/question/ask', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ question: currentQuestion }),
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // 处理流式响应
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          
+          // 处理可能的多个事件
+          const events = buffer.split('\n\n');
+          buffer = events.pop() || ''; // 保留不完整的事件
+
+          for (const event of events) {
+            if (event.trim()) {
+              const lines = event.split('\n');
+              let eventType = 'data';
+              let eventData = '';
+
+              for (const line of lines) {
+                if (line.startsWith('event:')) {
+                  eventType = line.substring(6).trim();
+                } else if (line.startsWith('data:')) {
+                  eventData = line.substring(5).trim();
+                }
+              }
+
+              if (eventType === 'data' && eventData) {
+                this.answer += eventData;
+              } else if (eventType === 'error') {
+                throw new Error(eventData);
+              } else if (eventType === 'complete') {
+                // 答案完成，添加到历史记录
+                this.historyList.unshift({
+                  title: currentQuestion,
+                  content: this.answer,
+                  createTime: new Date().toISOString()
+                });
+                break;
+              }
+            }
+          }
+        }
+
+      } catch (error) {
+        console.error("提交问题失败:", error);
+        this.answer = "抱歉，连接服务时发生错误：" + error.message;
+      } finally {
+        this.isLoading = false;
       }
-      catch (error) {
-        this.$message.error("退出登录失败！");
+    },
+
+    async logout() {
+      try {
+        await api.post('/api/auth/logout');
+        this.$router.push('/');
+      } catch (error) {
+        console.error('退出登录失败:', error);
+        // 即使退出失败也跳转到首页
+        this.$router.push('/');
       }
     }
   }
@@ -92,7 +211,6 @@ export default {
 </script>
 
 <style scoped>
-/* 背景统一渐变 */
 .qa-wrapper {
   height: 100vh;
   background: linear-gradient(135deg, #6EC6CA, #7C82E7);
@@ -101,7 +219,6 @@ export default {
   justify-content: center;
 }
 
-/* 页面主体卡片 */
 .qa-container {
   width: 90%;
   height: 85%;
@@ -113,33 +230,6 @@ export default {
   font-family: 'Segoe UI', sans-serif;
 }
 
-/* 左侧历史记录 */
-
-.history-panel h3 {
-  margin-bottom: 15px;
-  color: #333;
-}
-
-.history-panel ul {
-  list-style: none;
-  padding: 0;
-}
-
-.history-panel li {
-  padding: 10px;
-  background: #fff;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  transition: 0.3s;
-}
-
-.history-panel li:hover {
-  background: #e0f7fa;
-}
-
-/* 右侧问答主区域 */
 .qa-main {
   flex: 1;
   display: flex;
@@ -148,7 +238,6 @@ export default {
   position: relative;
 }
 
-/* 顶部标题 */
 .title-bar {
   display: flex;
   align-items: center;
@@ -179,7 +268,6 @@ export default {
   background: #ff5252;
 }
 
-/* 提问卡片 */
 .qa-card {
   background: #fafafa;
   border-radius: 12px;
@@ -201,6 +289,7 @@ export default {
   resize: none;
   font-size: 16px;
   margin-bottom: 15px;
+  box-sizing: border-box;
 }
 
 .submit-btn {
@@ -214,17 +303,50 @@ export default {
   transition: 0.3s;
 }
 
-.submit-btn:hover {
+.submit-btn:hover:not(:disabled) {
   opacity: 0.85;
 }
 
-/* 回答部分 */
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .answer-card {
   background: #fff;
   border-left: 4px solid #7C82E7;
   padding: 15px;
   border-radius: 10px;
   box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  overflow: auto;
 }
 
+.answer-content {
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #666;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #7C82E7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 </style>
