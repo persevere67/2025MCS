@@ -199,7 +199,7 @@
 </template>
 
 <script>
-import api from '@/utils/api'
+import api, { authUtils } from '@/utils/api'
 
 export default {
   name: 'RegisterForm',
@@ -276,12 +276,16 @@ export default {
   methods: {
     async checkSession() {
       try {
-        const {data} = await api.get('/api/auth/check')
-        if (data.authenticated) {
-          this.$router.push('/qna')
+        // 检查是否已经有token
+        if (authUtils.isLoggedIn()) {
+          const result = await api.question.testAuth()
+          if (result.success && result.data.authenticated) {
+            this.$router.push('/qa')
+          }
         }
       } catch (error) {
         console.error('检查会话失败:', error)
+        authUtils.clearToken()
       }
     },
 
@@ -292,7 +296,6 @@ export default {
       }, 5000)
     },
     
-
     validateField(fieldName) {
       const value = this.formData[fieldName]
       
@@ -380,25 +383,43 @@ export default {
       this.message.text = ''
 
       try {
-        const result = await api.auth.register({
+        const registerData = {
           username: this.formData.username,
-          password: this.formData.password,
-          email: this.formData.email || undefined
-        })
+          password: this.formData.password
+        }
+        
+        // 只在有邮箱时才添加
+        if (this.formData.email) {
+          registerData.email = this.formData.email
+        }
+
+        const result = await api.auth.register(registerData)
+
+        console.log('注册结果:', result)
 
         if (result.success) {
-          this.showMessage('注册成功！正在为您自动登录...', 'success')
+          this.showMessage('注册成功！正在为您自动跳转到登录页面...', 'success')
           this.$emit('register-success', result.data)
           
+          // 2秒后切换到登录页面
           setTimeout(() => {
             this.$emit('switch-to-login')
           }, 2000)
         } else {
-          throw new Error(result.message)
+          throw new Error(result.message || '注册失败')
         }
 
       } catch (error) {
-        this.showMessage(error.message || '注册失败，请重试')
+        console.error('注册错误:', error)
+        let errorMessage = '注册失败，请重试'
+        
+        if (error.message) {
+          errorMessage = error.message
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message
+        }
+        
+        this.showMessage(errorMessage)
       } finally {
         this.loading = false
       }
@@ -418,6 +439,7 @@ export default {
       }
       this.errors = {}
       this.showPassword = false
+      this.message.text = ''
     }
   }
 }

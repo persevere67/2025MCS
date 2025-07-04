@@ -132,7 +132,7 @@
 </template>
 
 <script>
-import api from '@/utils/api'
+import api, { authUtils } from '@/utils/api'
 
 export default {
   name: 'LoginForm',
@@ -165,22 +165,35 @@ export default {
 
   mounted() {
     this.loadRememberedUser()
-    this.checkSession()
+    this.checkTokenStatus()
   },
 
   methods: {
-    async checkSession() {
+    // 检查本地 Token 状态
+    checkTokenStatus() {
       try {
-        const {data} = await api.get('/api/auth/check')
-        if (data.authenticated) {
-          this.$router.push('/qna')
+        console.log('检查本地 Token 状态...')
+        
+        if (authUtils.isLoggedIn()) {
+          const token = authUtils.getToken()
+          console.log('发现本地 Token:', token ? 'exists' : 'missing')
+          
+          // 检查 Token 是否过期
+          if (authUtils.isTokenExpired()) {
+            console.log('Token 已过期，清除本地状态')
+            authUtils.clearToken()
+          } else {
+            console.log('Token 有效，直接跳转到问答页面')
+            this.$router.push('/qna')
+          }
+        } else {
+          console.log('无 Token，停留在登录页面')
         }
       } catch (error) {
-        console.error('检查会话失败:', error)
+        console.error('检查 Token 状态失败:', error)
+        authUtils.clearToken()
       }
     },
-
-
 
     showMessage(text, type = 'error') {
       this.message = { text, type }
@@ -233,6 +246,7 @@ export default {
     },
 
     async handleLogin() {
+      console.log('开始基于 Token 的登录流程...')
       this.validateAllFields()
       
       if (!this.isFormValid) {
@@ -244,49 +258,131 @@ export default {
       this.message.text = ''
 
       try {
+        console.log('发送登录请求...', { username: this.formData.username })
+        
         const result = await api.auth.login({
           username: this.formData.username,
           password: this.formData.password
         })
 
-        if (result.success) {
+        console.log('登录 API 响应:', result)
+
+        if (result.success && result.data.token) {
+          console.log('登录成功！Token 已保存到本地存储')
           this.showMessage('登录成功！', 'success')
           
+          // 保存用户信息到本地存储（如果需要）
+          if (result.data.user) {
+            authUtils.saveUserInfo(result.data.user)
+          }
+          
+          // 处理记住我功能
           if (this.formData.rememberMe) {
             this.saveRememberedUser()
           } else {
             this.clearRememberedUser()
           }
-          this.$router.push("/qna")
+          
+          // 发送登录成功事件
           this.$emit('login-success', result.data)
+          
+          // 基于 Token 的直接跳转（无需服务器验证）
+          console.log('Token 认证成功，执行页面跳转...')
+          
+          // 短暂延迟确保状态更新
+          setTimeout(() => {
+            this.performNavigation()
+          }, 500)
+          
         } else {
-          throw new Error(result.message)
+          throw new Error(result.message || '登录失败：未收到有效 Token')
         }
 
       } catch (error) {
-        this.showMessage(error.message || '登录失败')
+        console.error('登录过程出错:', error)
+        let errorMessage = '登录失败'
+        
+        if (error.message) {
+          errorMessage = error.message
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message
+        }
+        
+        this.showMessage(errorMessage)
       } finally {
         this.loading = false
+      }
+    },
+
+    // 执行页面跳转
+    performNavigation() {
+      try {
+        console.log('开始执行页面跳转到 /qna')
+        console.log('当前路由:', this.$route.path)
+        console.log('Token 状态:', authUtils.isLoggedIn())
+        
+        // 使用多种跳转策略
+        const navigationStrategies = [
+          // 策略1: Vue Router replace
+          () => {
+            console.log('尝试 Vue Router replace')
+            return this.$router.replace({ path: '/qna' })
+          },
+          
+          // 策略2: Vue Router push  
+          () => {
+            console.log('尝试 Vue Router push')
+            return this.$router.push({ path: '/qna' })
+          },
+          
+          // 策略3: 直接修改 URL
+          () => {
+            console.log('尝试直接修改 URL')
+            const newUrl = `${window.location.origin}${window.location.pathname}#/qna`
+            window.location.href = newUrl
+            return Promise.resolve()
+          }
+        ]
+        
+        // 依次尝试跳转策略
+        const tryNavigation = async (index = 0) => {
+          if (index >= navigationStrategies.length) {
+            throw new Error('所有跳转策略都失败了')
+          }
+          
+          try {
+            await navigationStrategies[index]()
+            console.log(`跳转策略 ${index + 1} 成功`)
+          } catch (error) {
+            console.log(`跳转策略 ${index + 1} 失败:`, error)
+            await tryNavigation(index + 1)
+          }
+        }
+        
+        tryNavigation()
+        
+      } catch (error) {
+        console.error('页面跳转完全失败:', error)
+        this.showMessage('页面跳转失败，请手动刷新页面')
       }
     },
 
     async quickLogin(type) {
       let credentials
       
-      if (type === 'demo') {
-        credentials = { username: 'demo', password: 'demo123' }
-        this.showMessage('正在使用演示账号登录...', 'success')
-      } else if (type === 'guest') {
+      if (type === 'guest') {
         credentials = { username: 'guest', password: 'guest123' }
         this.showMessage('正在以游客身份登录...', 'success')
       }
 
-      this.formData.username = credentials.username
-      this.formData.password = credentials.password
-      
-      setTimeout(() => {
-        this.handleLogin()
-      }, 500)
+      if (credentials) {
+        this.formData.username = credentials.username
+        this.formData.password = credentials.password
+        
+        setTimeout(() => {
+          this.handleLogin()
+        }, 500)
+      }
     },
 
     handleForgotPassword() {
@@ -299,6 +395,7 @@ export default {
           username: this.formData.username,
           timestamp: Date.now()
         }))
+        console.log('已保存记住的用户信息')
       } catch (error) {
         console.warn('无法保存记住的用户信息:', error)
       }
@@ -309,10 +406,13 @@ export default {
         const remembered = localStorage.getItem('rememberedUser')
         if (remembered) {
           const data = JSON.parse(remembered)
+          // 7天有效期
           if (Date.now() - data.timestamp < 7 * 24 * 60 * 60 * 1000) {
             this.formData.username = data.username
             this.formData.rememberMe = true
+            console.log('已加载记住的用户信息:', data.username)
           } else {
+            console.log('记住的用户信息已过期')
             this.clearRememberedUser()
           }
         }
@@ -324,6 +424,7 @@ export default {
     clearRememberedUser() {
       try {
         localStorage.removeItem('rememberedUser')
+        console.log('已清除记住的用户信息')
       } catch (error) {
         console.warn('无法清除记住的用户信息:', error)
       }
@@ -331,7 +432,6 @@ export default {
   }
 }
 </script>
-
 <style scoped>
 .login-container {
   width: 100%;

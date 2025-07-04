@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -16,25 +15,20 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuestionAnswer {
-    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-    
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String question;
     
-    @Column(nullable = false, length = 2000)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String answer;
     
-    @CreationTimestamp
-    @Column(name = "create_at", updatable = false)
+    @Column(name = "create_at")
     private LocalDateTime createAt;
     
-    @Column(name = "rating")
-    private Integer rating; // 1-5分评分
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 }
