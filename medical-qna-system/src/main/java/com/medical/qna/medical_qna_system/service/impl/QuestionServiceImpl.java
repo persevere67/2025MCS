@@ -177,6 +177,24 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
+    @Transactional
+    public QuestionAnswer updateQuestionAnswer(Long id, String answer) {
+        Optional<QuestionAnswer> qaOpt = questionAnswerRepository.findById(id);
+        if (qaOpt.isPresent()) {
+            QuestionAnswer qa = qaOpt.get();
+            qa.setAnswer(answer);
+            return questionAnswerRepository.save(qa);
+        } else {
+            log.warn("问答记录不存在: id={}", id);
+            throw new RuntimeException("问答记录不存在");
+        }
+    }
+
+
+
+
+
+    @Override
     public String processQuestion(String question) {
         try {
             // 调用Python后端

@@ -50,4 +50,6 @@ public interface QuestionService {
      * @param userId 用户ID
      */
     void clearUserHistory(Long userId);
+
+    QuestionAnswer updateQuestionAnswer(Long id, String answer);
 }

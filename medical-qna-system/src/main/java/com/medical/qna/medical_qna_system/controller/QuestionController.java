@@ -1,8 +1,9 @@
 package com.medical.qna.medical_qna_system.controller;
-
+import com.medical.qna.medical_qna_system.dto.request.QuestionAnswerUpdateRequest;
 import com.medical.qna.medical_qna_system.dto.request.QuestionRequest;
 import com.medical.qna.medical_qna_system.dto.response.ApiResponse;
 import com.medical.qna.medical_qna_system.dto.response.QuestionAnswerDto;
+import com.medical.qna.medical_qna_system.entity.mysql.QuestionAnswer;
 import com.medical.qna.medical_qna_system.entity.mysql.User;
 import com.medical.qna.medical_qna_system.service.QuestionService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -97,6 +98,33 @@ public class QuestionController {
             return ResponseEntity.ok(healthInfo);
         }
     }
+
+    /**
+     * 更新问答记录
+     */
+    @PutMapping("/history/{id}")
+    public ResponseEntity<ApiResponse<QuestionAnswerDto>> updateQuestionAnswer(@PathVariable Long id, @RequestBody QuestionAnswerUpdateRequest request) {
+        try {
+            QuestionAnswer updatedQa = questionService.updateQuestionAnswer(id, request.getAnswer());
+            QuestionAnswerDto dto = QuestionAnswerDto.builder()
+                    .id(updatedQa.getId())
+                    .question(updatedQa.getQuestion())
+                    .answer(updatedQa.getAnswer())
+                    .createAt(updatedQa.getCreateAt())
+                    .build();
+            return ResponseEntity.ok(ApiResponse.success("更新成功", dto));
+        } catch (Exception e) {
+            log.error("更新问答记录失败: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("UPDATE_FAILED", e.getMessage()));
+        }
+    }
+
+
+
+
+
+
 
     /**
      * 主要的问答接口 - 使用SSE流式响应
