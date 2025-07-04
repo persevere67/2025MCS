@@ -1,0 +1,3 @@
+epoch_3/
+RAG/data/final_medical_knowledge.faiss
+RAG/data/final_medical_sentences.pkl
