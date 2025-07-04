@@ -34,8 +34,8 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(ErrorCode.USERNAME_EXISTS);
         }
         
-        // 验证邮箱
-        if (existsByEmail(request.getEmail())) {
+        // 验证邮箱（只有在提供邮箱时才验证）
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty() && existsByEmail(request.getEmail())) {
             throw new BusinessException(ErrorCode.EMAIL_EXISTS);
         }
         
@@ -59,6 +59,23 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<User> findById(Long id) {
+        return userRepository.findById(id);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public User getUserById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username).orElse(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<User> getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }
@@ -72,6 +89,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
         return userRepository.existsByEmail(email);
     }
 }

@@ -11,6 +11,20 @@ public interface UserService {
      * 用户注册
      */
     User register(RegisterRequest request);
+
+    /**
+     * 根据id获取用户
+     */
+    Optional<User> findById(Long id);
+    
+    /**
+     * 根据id获取用户（直接返回User对象，兼容现有代码）
+     */
+    User getUserById(Long id);
+    /**
+     * 根据用户名查找用户
+     */
+    User findByUsername(String username);
     
     /**
      * 根据用户名获取用户

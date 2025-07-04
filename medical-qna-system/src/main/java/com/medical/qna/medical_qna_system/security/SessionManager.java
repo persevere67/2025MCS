@@ -13,11 +13,13 @@ public class SessionManager {
     
     private static final String USER_SESSION_KEY = "AUTH_USER";
     private static final String LOGIN_TIME_KEY = "LOGIN_TIME";
+    private static final int SESSION_TIMEOUT = 1800; // 30分钟
     
     public void createUserSession(HttpSession session, User user) {
         session.setAttribute(USER_SESSION_KEY, user);
         session.setAttribute(LOGIN_TIME_KEY, LocalDateTime.now());
-        log.info("用户 {} 创建会话成功", user.getUsername());
+        session.setMaxInactiveInterval(SESSION_TIMEOUT);
+        log.info("用户 {} 创建会话成功 | Session ID: {}", user.getUsername(), session.getId());
     }
     
     public User getCurrentUser(HttpSession session) {
@@ -33,11 +35,17 @@ public class SessionManager {
                 User user = getCurrentUser(session);
                 session.invalidate();
                 if (user != null) {
-                    log.info("用户 {} 会话已失效", user.getUsername());
+                    log.info("用户 {} 会话已失效 | Session ID: {}", user.getUsername(), session.getId());
                 }
             } catch (IllegalStateException e) {
                 log.warn("会话已经失效: {}", e.getMessage());
             }
+        }
+    }
+    
+    public void refreshSession(HttpSession session) {
+        if (session != null && isSessionValid(session)) {
+            session.setMaxInactiveInterval(SESSION_TIMEOUT);
         }
     }
     
