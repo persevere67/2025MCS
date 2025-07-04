@@ -8,19 +8,14 @@ import com.medical.qna.medical_qna_system.service.QuestionService;
 import com.medical.qna.medical_qna_system.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,98 +27,30 @@ public class QuestionServiceImpl implements QuestionService {
     private final UserService userService;
 
     @Override
-    public void processQuestionWithStream(String question, Consumer<String> chunkConsumer) {
-        try {
-            // 调用Python后端的流式接口
-            URL url = new URL("http://127.0.0.1:8000/ask");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("Accept-Charset", "UTF-8");
-            connection.setDoOutput(true);
-            connection.setConnectTimeout(5000); // 连接超时5秒
-            connection.setReadTimeout(30000);   // 读取超时30秒
-
-            // 发送请求数据
-            String jsonInputString = String.format("{\"question\":\"%s\"}", 
-                question.replace("\"", "\\\"").replace("\n", "\\n"));
-            
-            try (OutputStreamWriter writer = new OutputStreamWriter(
-                    connection.getOutputStream(), StandardCharsets.UTF_8)) {
-                writer.write(jsonInputString);
-                writer.flush();
-            }
-
-            // 检查响应状态
-            int responseCode = connection.getResponseCode();
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                log.error("Python后端返回错误状态码: {}", responseCode);
-                chunkConsumer.accept("抱歉，AI服务暂时不可用，请稍后重试。");
-                return;
-            }
-
-            // 读取流式响应
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-                
-                StringBuilder buffer = new StringBuilder();
-                int character;
-                
-                while ((character = reader.read()) != -1) {
-                    char ch = (char) character;
-                    buffer.append(ch);
-                    
-                    // 每读取一定字符就发送一次，或者遇到特定标点符号
-                    if (buffer.length() >= 10 || ch == '。' || ch == '\n' || 
-                        ch == '！' || ch == '？' || ch == '；' || ch == '，') {
-                        
-                        String chunk = buffer.toString();
-                        if (!chunk.trim().isEmpty()) {
-                            chunkConsumer.accept(chunk);
-                        }
-                        buffer.setLength(0);
-                        
-                        // 添加小延迟以模拟流式效果
-                        Thread.sleep(50);
-                    }
-                }
-                
-                // 发送剩余的字符
-                if (buffer.length() > 0) {
-                    String chunk = buffer.toString();
-                    if (!chunk.trim().isEmpty()) {
-                        chunkConsumer.accept(chunk);
-                    }
-                }
-            }
-            
-            connection.disconnect();
-            log.info("问题处理完成: {}", question.substring(0, Math.min(question.length(), 50)));
-            
-        } catch (Exception e) {
-            log.error("调用Python后端失败", e);
-            chunkConsumer.accept("抱歉，处理您的问题时发生了错误，请检查网络连接或稍后重试。");
-        }
-    }
-
-    @Override
     @Transactional
     public void saveQuestionAnswer(Long userId, String question, String answer) {
-        User user = userService.getUserById(userId);
-        if (user == null) {
-            log.error("用户不存在: {}", userId);
-            throw new RuntimeException("用户不存在");
+        try {
+            User user = userService.getUserById(userId);
+            if (user == null) {
+                log.error("用户不存在: {}", userId);
+                throw new RuntimeException("用户不存在");
+            }
+            
+            QuestionAnswer qa = QuestionAnswer.builder()
+                    .user(user)
+                    .question(question)
+                    .answer(answer)
+                    .createAt(LocalDateTime.now())
+                    .build();
+            
+            questionAnswerRepository.save(qa);
+            log.info("问答记录保存成功: 用户={}, 问题长度={}, 答案长度={}", 
+                    userId, question.length(), answer != null ? answer.length() : 0);
+                    
+        } catch (Exception e) {
+            log.error("保存问答记录失败: userId={}", userId, e);
+            throw new RuntimeException("保存问答记录失败", e);
         }
-        
-        QuestionAnswer qa = QuestionAnswer.builder()
-                .user(user)
-                .question(question)
-                .answer(answer)
-                .createAt(LocalDateTime.now())
-                .build();
-        
-        questionAnswerRepository.save(qa);
-        log.info("问答记录保存成功: 用户={}, 问题={}", userId, question.substring(0, Math.min(question.length(), 50)));
     }
     
     @Override
@@ -131,14 +58,18 @@ public class QuestionServiceImpl implements QuestionService {
     public List<QuestionAnswerDto> getUserHistory(Long userId) {
         try {
             List<QuestionAnswer> history = questionAnswerRepository.findByUserIdOrderByCreateAtDesc(userId);
-            return history.stream()
+            List<QuestionAnswerDto> result = history.stream()
                     .map(qa -> QuestionAnswerDto.builder()
                             .id(qa.getId())
                             .question(qa.getQuestion())
                             .answer(qa.getAnswer())
-                            .createAt(qa.getCreateAt())  // 确保字段名匹配
+                            .createAt(qa.getCreateAt())
                             .build())
                     .collect(Collectors.toList());
+                    
+            log.info("获取用户历史记录成功: userId={}, 记录数={}", userId, result.size());
+            return result;
+            
         } catch (Exception e) {
             log.error("获取用户历史记录失败: userId={}", userId, e);
             throw new RuntimeException("获取历史记录失败", e);
@@ -163,12 +94,14 @@ public class QuestionServiceImpl implements QuestionService {
         }
     }
 
-    // 新增方法
     @Override
     @Transactional
     public void clearUserHistory(Long userId) {
         try {
+            // 使用自定义的批量删除方法，并记录删除的行数
             questionAnswerRepository.deleteByUserId(userId);
+            // 注意：由于Repository中的方法返回void，我们无法获取删除的行数
+            // 如果需要返回删除行数，可以修改Repository方法返回int
             log.info("清空用户历史记录成功: userId={}", userId);
         } catch (Exception e) {
             log.error("清空用户历史记录失败: userId={}", userId, e);
@@ -176,43 +109,129 @@ public class QuestionServiceImpl implements QuestionService {
         }
     }
 
-    @Override
-    public String processQuestion(String question) {
+    /**
+     * 根据关键词搜索用户的问答记录
+     * @param userId 用户ID
+     * @param keyword 搜索关键词
+     * @return 匹配的问答记录列表
+     */
+    @Transactional(readOnly = true)
+    public List<QuestionAnswerDto> searchUserHistory(Long userId, String keyword) {
         try {
-            // 调用Python后端
-            URL url = new URL("http://127.0.0.1:8000/ask");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("Accept-Charset", "UTF-8");
-            connection.setDoOutput(true);
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(30000);
-
-            String jsonInputString = String.format("{\"question\":\"%s\"}", 
-                question.replace("\"", "\\\"").replace("\n", "\\n"));
+            List<QuestionAnswer> searchResults = questionAnswerRepository
+                    .findByUserIdAndQuestionContaining(userId, keyword);
             
-            try (OutputStreamWriter writer = new OutputStreamWriter(
-                    connection.getOutputStream(), StandardCharsets.UTF_8)) {
-                writer.write(jsonInputString);
-                writer.flush();
-            }
-
-            StringBuilder response = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-            }
-
-            connection.disconnect();
-            return response.toString();
+            List<QuestionAnswerDto> result = searchResults.stream()
+                    .map(qa -> QuestionAnswerDto.builder()
+                            .id(qa.getId())
+                            .question(qa.getQuestion())
+                            .answer(qa.getAnswer())
+                            .createAt(qa.getCreateAt())
+                            .build())
+                    .collect(Collectors.toList());
+                    
+            log.info("搜索用户历史记录成功: userId={}, keyword={}, 结果数={}", 
+                    userId, keyword, result.size());
+            return result;
             
         } catch (Exception e) {
-            log.error("处理问题失败", e);
-            return "抱歉，处理您的问题时发生了错误，请稍后重试。";
+            log.error("搜索用户历史记录失败: userId={}, keyword={}", userId, keyword, e);
+            throw new RuntimeException("搜索历史记录失败", e);
         }
     }
+
+    /**
+     * 获取用户问答记录总数
+     * @param userId 用户ID
+     * @return 记录总数
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public long getUserQuestionCount(Long userId) {
+        try {
+            long count = questionAnswerRepository.countByUserId(userId);
+            log.info("获取用户问答记录总数: userId={}, count={}", userId, count);
+            return count;
+        } catch (Exception e) {
+            log.error("获取用户问答记录总数失败: userId={}", userId, e);
+            return 0;
+        }
+    }
+
+    /**
+     * 分页获取用户最近的问答记录
+     * @param userId 用户ID
+     * @param page 页码（从0开始）
+     * @param size 每页大小
+     * @return 分页的问答记录列表
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<QuestionAnswerDto> getUserRecentHistory(Long userId, int page, int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            List<QuestionAnswer> recentHistory = questionAnswerRepository
+                    .findRecentByUserId(userId, pageable);
+            
+            List<QuestionAnswerDto> result = recentHistory.stream()
+                    .map(qa -> QuestionAnswerDto.builder()
+                            .id(qa.getId())
+                            .question(qa.getQuestion())
+                            .answer(qa.getAnswer())
+                            .createAt(qa.getCreateAt())
+                            .build())
+                    .collect(Collectors.toList());
+                    
+            log.info("分页获取用户最近历史记录成功: userId={}, page={}, size={}, 结果数={}", 
+                    userId, page, size, result.size());
+            return result;
+            
+        } catch (Exception e) {
+            log.error("分页获取用户最近历史记录失败: userId={}, page={}, size={}", 
+                    userId, page, size, e);
+            throw new RuntimeException("获取分页历史记录失败", e);
+        }
+    }
+
+    /**
+     * 批量删除用户的问答记录
+     * @param ids 要删除的记录ID列表
+     * @param userId 用户ID
+     * @return 成功删除的记录数
+     */
+    @Transactional
+    public int batchDeleteQuestionAnswers(List<Long> ids, Long userId) {
+        try {
+            int deletedCount = 0;
+            for (Long id : ids) {
+                if (deleteQuestionAnswer(id, userId)) {
+                    deletedCount++;
+                }
+            }
+            log.info("批量删除问答记录: userId={}, 请求删除={}条, 成功删除={}条", 
+                    userId, ids.size(), deletedCount);
+            return deletedCount;
+        } catch (Exception e) {
+            log.error("批量删除问答记录失败: userId={}, ids={}", userId, ids, e);
+            throw new RuntimeException("批量删除失败", e);
+        }
+    }
+
+    /**
+     * 检查用户是否有问答记录
+     * @param userId 用户ID
+     * @return 是否有记录
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasUserQuestions(Long userId) {
+        try {
+            long count = questionAnswerRepository.countByUserId(userId);
+            return count > 0;
+        } catch (Exception e) {
+            log.error("检查用户是否有问答记录失败: userId={}", userId, e);
+            return false;
+        }
+    }
+
 }

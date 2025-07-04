@@ -1,14 +1,16 @@
 package com.medical.qna.medical_qna_system.dto.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class QuestionRequest {
-    @NotBlank(message = "问题不能为空")
+    
+    @NotBlank(message = "问题内容不能为空")
+    @Size(max = 1500, message = "问题内容不能超过1500个字符")
     private String question;
+    
+    // 答案字段，用于保存问答记录时使用
+    private String answer;
 }
