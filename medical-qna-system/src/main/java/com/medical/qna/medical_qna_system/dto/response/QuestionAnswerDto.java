@@ -28,4 +28,11 @@ public class QuestionAnswerDto {
     public void setCreateTime(LocalDateTime createTime) {
         this.createAt = createTime;
     }
+
+    public static QuestionAnswerDto create(String question, String answer) {
+        return QuestionAnswerDto.builder()
+                .question(question)
+                .answer(answer)
+                .build();
+    }
 }
