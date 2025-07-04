@@ -146,59 +146,6 @@ async def ask_question(query: Query):
         media_type="text/event-stream"
     )
 
-# 测试检索端点 - 保留
-@app.get("/test-retrieve")
-async def test_retrieve(query: str, k: int = 3):
-    """测试检索功能"""
-    if not rag_system or rag_system.status != "READY":
-        return JSONResponse(
-            status_code=503,
-            content={"error": "检索系统未初始化"}
-        )
-        
-    context = rag_system.retrieve(query, k)
-    return {
-        "query": query,
-        "k": k,
-        "context": context
-    }
-
-# 测试LLM端点 - 保留
-@app.get("/test-llm")
-async def test_llm(prompt: str = "你好，请介绍一下自己"):
-    """测试LLM连接性"""
-    if not rag_system or rag_system.status != "READY":
-        return JSONResponse(
-            status_code=503,
-            content={"error": "LLM客户端未初始化"}
-        )
-        
-    try:
-        # 使用异步客户端
-        response = await rag_system.llm_client.chat.completions.create(
-            model=CONFIG['llm_model_name'],
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=200
-        )
-        
-        return {
-            "prompt": prompt,
-            "response": response.choices[0].message.content
-        }
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"error": str(e)}
-        )
-
-# 错误处理
-@app.exception_handler(Exception)
-async def exception_handler(request, exc):
-    return JSONResponse(
-        status_code=500,
-        content={"error": str(exc)}
-    )
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
