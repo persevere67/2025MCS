@@ -287,20 +287,13 @@ export default {
           this.$emit('login-success', result.data)
           
           // 根据用户角色跳转
-<<<<<<< HEAD
+
           const role = result.data.user?.role
-          if (role === 'ADMIN') {
-            this.$router.replace({ path: '/admin' })
-          } else {
-            this.$router.replace({ path: '/qna' })
-=======
-          console.role = result.data.user?.role
-          if(role === 'ADMIN'){
-            this.router.replace({path:'/admin'})
-          }else{
-            this.router.replace({path:'/qna'})
->>>>>>> a95862dd60be50109f04db03b818b1080516b83f
-          }
+        if (role === 'ADMIN') {
+          this.$router.replace({ path: '/admin' })
+        } else {
+          this.$router.replace({ path: '/qna' })
+        }
           
           // 短暂延迟确保状态更新
           setTimeout(() => {

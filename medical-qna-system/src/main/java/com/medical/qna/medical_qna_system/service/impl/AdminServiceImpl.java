@@ -79,7 +79,12 @@ public class AdminServiceImpl implements AdminService {
         Page<QuestionAnswer> questionAnswerPage = questionAnswerRepository.findByUserOrderByCreateAtDesc(user, pageable);
 
         List<QuestionAnswerDto> questionAnswerDtos = questionAnswerPage.getContent().stream()
-               .map(qa -> QuestionAnswerDto.create(qa.getQuestion(), qa.getAnswer()))
+               .map(qa -> QuestionAnswerDto.builder()
+                       .id(qa.getId())
+                       .question(qa.getQuestion())
+                       .answer(qa.getAnswer())
+                       .createAt(qa.getCreateAt())
+                       .build())
                .collect(Collectors.toList());
 
         return new PageImpl<>(questionAnswerDtos, pageable, questionAnswerPage.getTotalElements());
