@@ -67,7 +67,7 @@ axios.interceptors.response.use(
 
 class ApiClient {
   
-  // 统一处理响应格式
+  // 统一处理响应响应
   _handleResponse(response) {
     // 适配你的后端响应格式
     if (response.data && typeof response.data === 'object') {
@@ -238,7 +238,6 @@ class ApiClient {
     // 注意：ask接口使用SSE，不通过这个方法
     // 实际的ask请求在组件中直接使用fetch处理SSE
     getHistory: () => this.get('/api/question/history'),
-    
     deleteHistory: (id) => this.delete(`/api/question/history/${id}`),
     
     clearHistory: () => this.delete('/api/question/history'),

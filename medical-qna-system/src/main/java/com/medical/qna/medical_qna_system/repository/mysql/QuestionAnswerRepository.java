@@ -8,7 +8,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
-
+import com.medical.qna.medical_qna_system.entity.mysql.User;
+import org.springframework.data.domain.Page;
 @Repository
 public interface QuestionAnswerRepository extends JpaRepository<QuestionAnswer, Long> {
     
@@ -17,6 +18,9 @@ public interface QuestionAnswerRepository extends JpaRepository<QuestionAnswer, 
      */
     List<QuestionAnswer> findByUserIdOrderByCreateAtDesc(Long userId);
     
+    // 分页查询某用户的问答历史，按创建时间倒序
+    Page<QuestionAnswer> findByUserOrderByCreateAtDesc(User user, Pageable pageable);
+
     /**
      * 按关键词搜索用户的问答记录
      */
