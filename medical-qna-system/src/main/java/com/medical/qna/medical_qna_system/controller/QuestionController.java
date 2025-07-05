@@ -13,17 +13,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Flux;
 
-import java.io.IOException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -140,172 +133,48 @@ public class QuestionController {
      * 2. 调用RAG回答模型服务获取流式答案。
      * 3. 将流式答案和推荐问题通过SSE发送给前端。
      */
-    @PostMapping("/ask")
-    public SseEmitter askQuestion(@Valid @RequestBody QuestionRequest request,
+    @PostMapping("/save")
+    public ResponseEntity<ApiResponse<String>> saveQuestionAnswer(@Valid @RequestBody QuestionRequest request,
                                   HttpServletRequest httpRequest) {
 
-        log.info("收到问题: {}", request.getQuestion());
-
+        log.info("保存问答记录: {}", request.getQuestion());
+        
+        // 从JWT token中获取用户信息
         User user = (User) httpRequest.getAttribute("currentUser");
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
 
         if (user == null) {
-            log.warn("用户未认证或未提供有效token，但该端点允许匿名访问。");
-        } else {
-            log.info("用户 {} 请求问答服务", user.getUsername());
+            log.warn("用户未认证，拒绝请求");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("UNAUTHORIZED", "用户未登录或认证已过期，请重新登录"));
         }
 
+        // 验证问题内容
         if (request.getQuestion() == null || request.getQuestion().trim().isEmpty()) {
-            sendErrorAndComplete(emitter, "问题内容不能为空");
-            return emitter;
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("INVALID_INPUT", "问题内容不能为空"));
         }
 
-        startHeartbeat(emitter);
+        // 验证答案内容
+        if (request.getAnswer() == null || request.getAnswer().trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("INVALID_INPUT", "答案内容不能为空"));
+        }
 
-        CompletableFuture.runAsync(() -> {
-            AtomicReference<StringBuilder> fullAnswer = new AtomicReference<>(new StringBuilder());
-            try {
-                emitter.send(SseEmitter.event().name("start").data("AI助手正在思考您的问题..."));
-
-                // --- 步骤 1: 调用语义理解服务 (AC 自动机) ---
-                log.info("开始调用Python AC自动机服务进行语义理解");
-                SemanticUnderstandingResult semanticResult = semanticUnderstandingService.analyze(request.getQuestion());
-
-                if (semanticResult == null || semanticResult.getApiResponse() == null || semanticResult.getApiResponse().getCode() != 200) {
-                    String errorMessage = "语义理解服务出错: " + (semanticResult != null && semanticResult.getApiResponse() != null ? semanticResult.getApiResponse().getMessage() : "未知错误");
-                    log.error(errorMessage);
-                    sendErrorAndComplete(emitter, errorMessage);
-                    return;
-                }
-                log.info("语义理解结果: 意图={}, 关键词={}", semanticResult.getIdentifiedIntent(), semanticResult.getIdentifiedKeywords());
-
-
-                // --- 步骤 2: 调用 RAG 回答模型服务并流式处理答案 ---
-                log.info("开始调用Python RAG回答模型服务");
-                Flux<String> answerFlux = webClient.post()
-                        .uri(ANSWER_MODEL_API_URL) // 调用RAG模型的/ask接口
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(Map.of("question", request.getQuestion())) // RAG模型期望 "question" 键
-                        .retrieve()
-                        .bodyToFlux(String.class) // RAG模型返回的是文本流
-                        .timeout(Duration.ofMinutes(5)) // 5分钟超时
-                        .onErrorResume(WebClientResponseException.class, ex -> {
-                            log.error("调用Python RAG回答模型API失败: {} - {}", ex.getStatusCode(), ex.getResponseBodyAsString());
-                            return Flux.just("抱歉，回答模型服务暂时不可用，请稍后重试。错误代码：" + ex.getStatusCode().value());
-                        })
-                        .onErrorResume(Exception.class, ex -> {
-                            log.error("调用Python RAG回答模型API时发生未知错误", ex);
-                            return Flux.just("抱歉，处理您的问题时发生错误，请稍后重试。");
-                        });
-
-                // 处理流式响应，并发送给前端
-                answerFlux
-                    .doOnNext(chunk -> {
-                        try {
-                            if (chunk != null && !chunk.isEmpty()) {
-                                fullAnswer.get().append(chunk);
-                                emitter.send(SseEmitter.event().name("data").data(chunk));
-                                log.debug("发送数据块: {}", chunk.substring(0, Math.min(chunk.length(), 50)) + "...");
-                            }
-                        } catch (IOException e) {
-                            log.error("发送数据块失败", e);
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .doOnError(error -> {
-                        log.error("RAG回答模型流处理发生错误", error);
-                        sendErrorAndComplete(emitter, "获取答案时发生错误: " + error.getMessage());
-                    })
-                    .doOnComplete(() -> {
-                        try {
-                            String completeAnswer = fullAnswer.get().toString();
-                            log.info("答案接收完成，总长度: {}", completeAnswer.length());
-
-                            if (user != null && !completeAnswer.isEmpty()) { // 只有在用户存在且有答案时才保存
-                                // 保存到数据库
-                                questionService.saveQuestionAnswer(
-                                        user.getId(),
-                                        request.getQuestion(),
-                                        completeAnswer
-                                );
-                                log.info("问答记录已保存到数据库，用户: {}", user.getUsername());
-                            } else if (user == null) {
-                                log.warn("匿名用户问答，不保存历史记录。");
-                            }
-
-                            // --- 步骤 3: 发送推荐问题 (从语义理解结果中获取) ---
-                            if (semanticResult.getRecommendedQuestions() != null && !semanticResult.getRecommendedQuestions().isEmpty()) {
-                                try {
-                                    // 将 List<RecommendedQuestion> 序列化为 JSON 字符串发送
-                                    String recommendedQuestionsJson = objectMapper.writeValueAsString(semanticResult.getRecommendedQuestions());
-                                    emitter.send(SseEmitter.event().name("recommendedQuestions").data(recommendedQuestionsJson));
-                                    log.info("发送推荐问题: {}", recommendedQuestionsJson.substring(0, Math.min(recommendedQuestionsJson.length(), 100)) + "...");
-                                } catch (IOException e) {
-                                    log.error("序列化或发送推荐问题失败", e);
-                                    sendErrorAndComplete(emitter, "发送推荐问题失败");
-                                }
-                            }
-
-                            // 发送完成事件
-                            emitter.send(SseEmitter.event().name("complete").data("回答完成"));
-                            emitter.complete();
-                            log.info("SSE连接正常完成，用户: {}", user != null ? user.getUsername() : "匿名");
-
-                        } catch (Exception e) {
-                            log.error("完成处理时发生错误", e);
-                            sendErrorAndComplete(emitter, "保存答案或发送完成事件时出错");
-                        }
-                    })
-                    .subscribe(); // 启动流处理
-
-            } catch (Exception e) {
-                log.error("处理问题时发生异常", e);
-                sendErrorAndComplete(emitter, "处理问题时发生错误: " + e.getMessage());
-            }
-        }, Executors.newCachedThreadPool()); // 使用一个线程池来异步执行，避免阻塞主线程
-
-        return emitter;
-    }
-
-    /**
-     * 启动SSE心跳机制
-     */
-    private void startHeartbeat(SseEmitter emitter) {
-        ScheduledFuture<?> heartbeatFuture = heartbeatScheduler.scheduleAtFixedRate(() -> {
-            try {
-                emitter.send(SseEmitter.event().comment("heartbeat"));
-                log.debug("发送心跳");
-            } catch (Exception e) {
-                log.debug("心跳发送失败，可能连接已关闭: {}", e.getMessage());
-            }
-        }, 30, 30, TimeUnit.SECONDS); // 30秒心跳间隔
-
-        // 连接结束时取消心跳
-        emitter.onCompletion(() -> {
-            heartbeatFuture.cancel(true);
-            log.debug("心跳任务已取消 - 连接完成");
-        });
-        emitter.onTimeout(() -> {
-            heartbeatFuture.cancel(true);
-            log.warn("SSE连接超时，心跳任务已取消");
-        });
-        emitter.onError(ex -> {
-            heartbeatFuture.cancel(true);
-            log.error("SSE连接发生错误，心跳任务已取消", ex);
-        });
-    }
-
-    /**
-     * 发送错误消息并完成SSE连接
-     */
-    private void sendErrorAndComplete(SseEmitter emitter, String message) {
         try {
-            emitter.send(SseEmitter.event().name("error").data(message));
-            emitter.complete();
-            log.info("已发送错误消息并完成连接: {}", message);
-        } catch (Exception ex) {
-            log.error("发送错误消息失败", ex);
-            emitter.completeWithError(ex);
+            // 保存到数据库
+            questionService.saveQuestionAnswer(
+                    user.getId(),
+                    request.getQuestion(),
+                    request.getAnswer()
+            );
+            
+            log.info("问答记录已保存到数据库，用户: {}", user.getUsername());
+            return ResponseEntity.ok(ApiResponse.success("保存成功"));
+            
+        } catch (Exception e) {
+            log.error("保存问答记录时发生错误", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("SERVER_ERROR", "保存失败: " + e.getMessage()));
         }
     }
 
@@ -377,7 +246,9 @@ public class QuestionController {
         }
 
         try {
-            // 获取用户问答统计
+            // 使用优化的方法获取统计信息
+            long totalQuestions = questionService.getUserQuestionCount(user.getId());
+            
             Map<String, Object> stats = new HashMap<>();
             List<QuestionAnswerDto> history = questionService.getUserHistory(user.getId());
 
@@ -386,7 +257,18 @@ public class QuestionController {
             stats.put("lastQuestionTime", history.isEmpty() ? null : history.get(0).getCreateAt());
             stats.put("username", user.getUsername());
             stats.put("userRole", user.getRole());
-
+            stats.put("hasQuestions", questionService.hasUserQuestions(user.getId()));
+            
+            // 如果有问答记录，获取最新的一条来显示最后提问时间
+            if (totalQuestions > 0) {
+                List<QuestionAnswerDto> recentHistory = questionService.getUserRecentHistory(user.getId(), 0, 1);
+                if (!recentHistory.isEmpty()) {
+                    stats.put("lastQuestionTime", recentHistory.get(0).getCreateAt());
+                }
+            } else {
+                stats.put("lastQuestionTime", null);
+            }
+        
             log.info("获取用户 {} 的统计信息", user.getUsername());
             return ResponseEntity.ok(ApiResponse.success(stats));
 

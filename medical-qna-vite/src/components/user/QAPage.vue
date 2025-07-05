@@ -212,6 +212,8 @@
 </template>
 
 <script>
+// QAPage.vue 脚本部分 - 直接调用RAG服务
+
 import HistoryPage from './HistoryPage.vue';
 import logo from '../../assets/logo.png';
 import api, { authUtils } from '@/utils/api';
@@ -232,14 +234,14 @@ export default {
       userStats: null,
       isLoading: false,
       historyLoading: false,
-      isRefreshing: false,
       errorMessage: "",
       globalMessage: "",
-      globalMessageType: "info", // info, success, warning, error
-      connectionStatus: "unknown", // unknown, connected, disconnected
+      globalMessageType: "info",
       loadingText: "AI助手正在思考您的问题...",
       answerTime: "",
-      supportsSpeech: 'speechSynthesis' in window,
+      
+      // RAG服务配置
+      ragApiUrl: "http://localhost:8000/ask",
       
       // Token 监控
       tokenCheckInterval: null,
@@ -257,20 +259,11 @@ export default {
   },
   
   computed: {
-    connectionStatusText() {
-      switch (this.connectionStatus) {
-        case 'connected': return '🟢 服务正常';
-        case 'disconnected': return '🔴 服务异常';
-        default: return '🟡 检查中...';
-      }
-    },
-    
     canSubmit() {
       return this.question.trim() && 
              !this.isLoading && 
-             this.connectionStatus === 'connected' &&
              this.question.length <= 1500 &&
-             authUtils.isLoggedIn(); // 添加认证检查
+             authUtils.isLoggedIn();
     },
     
     showAnswerArea() {
@@ -279,66 +272,41 @@ export default {
   },
   
   mounted() {
-    console.log('QAPage 组件已挂载，当前路由:', this.$route.path);
+    console.log('QAPage 组件已挂载');
     this.initializePage();
   },
   
   beforeUnmount() {
     this.clearLoadingInterval();
     this.stopTokenMonitoring();
-    
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
   },
   
   methods: {
-    // 基于Token的认证检查
+    // 认证检查
     checkAuth() {
       try {
-        console.log('开始基于Token的认证检查...');
-        
-        // 检查是否有有效的Token
         if (!authUtils.isLoggedIn()) {
-          console.warn('Token无效或已过期，跳转到登录页');
           this.showGlobalMessage('登录已过期，请重新登录', 'warning');
           this.$router.push('/');
           return false;
         }
         
-        // 获取用户信息
         const userInfo = authUtils.getUserInfo();
         if (userInfo) {
-          console.log('Token认证成功，用户信息:', userInfo);
-          
-          // 更新页面状态
           this.userStats = {
             username: userInfo.username,
             userId: userInfo.userId,
             role: userInfo.role,
-            totalQuestions: 0 // 稍后从历史记录中计算
+            totalQuestions: 0
           };
-          
-          // 检查Token剩余时间并显示提醒
-          const remainingTime = authUtils.getTokenRemainingTime();
-          console.log(`Token剩余时间: ${authUtils.formatRemainingTime()}`);
-          
-          // 如果剩余时间少于30分钟，显示提醒
-          if (remainingTime < 30 * 60 && remainingTime > 0) {
-            const minutes = Math.floor(remainingTime / 60);
-            this.showGlobalMessage(`登录将在 ${minutes} 分钟后过期`, 'warning');
-          }
-          
           return true;
         } else {
-          console.error('无法获取用户信息');
           authUtils.clearToken();
           this.$router.push('/');
           return false;
         }
-        
       } catch (error) {
-        console.error('Token认证检查失败:', error);
+        console.error('认证检查失败:', error);
         authUtils.clearToken();
         this.$router.push('/');
         return false;
@@ -349,21 +317,12 @@ export default {
       this.showGlobalMessage('正在初始化页面...', 'info');
       
       try {
-        // 首先进行Token认证检查
         if (!this.checkAuth()) {
-          return; // 认证失败，已跳转
+          return;
         }
         
-        // 启动Token监控
         this.startTokenMonitoring();
-        
-        // 检查服务连接状态
-        await this.checkConnection();
-        
-        // 加载历史记录
         await this.loadHistory();
-        
-        // 加载用户统计信息
         await this.loadUserStats();
         
         this.showGlobalMessage('页面加载完成', 'success');
@@ -372,54 +331,6 @@ export default {
         console.error('页面初始化失败:', error);
         this.showGlobalMessage('页面初始化失败: ' + error.message, 'error');
       }
-    },
-
-    async checkConnection() {
-      try {
-        this.connectionStatus = 'unknown';
-        
-        // 使用带Token的请求检查Spring Boot服务
-        const springResult = await api.question.springHealth();
-        
-        if (!springResult.success) {
-          throw new Error('Spring Boot服务异常');
-        }
-        
-        // 检查完整系统（包括Python服务）
-        const healthResult = await api.question.health();
-        
-        if (healthResult.success) {
-          this.connectionStatus = healthResult.data.pythonService === 'available' ? 'connected' : 'disconnected';
-          
-          if (this.connectionStatus === 'disconnected') {
-            console.warn('Python RAG服务不可用:', healthResult.data.error);
-          }
-        } else {
-          this.connectionStatus = 'disconnected';
-        }
-        
-      } catch (error) {
-        console.error('连接检查失败:', error);
-        this.connectionStatus = 'disconnected';
-        
-        // 如果是认证错误，清除Token
-        if (error.response && error.response.status === 401) {
-          console.warn('Token已失效，清除本地状态');
-          authUtils.clearToken();
-          this.$router.push('/');
-        }
-      }
-    },
-
-    async refreshConnection() {
-      this.isRefreshing = true;
-      await this.checkConnection();
-      this.isRefreshing = false;
-      
-      const message = this.connectionStatus === 'connected' ? 
-        '连接检查完成，服务正常' : '服务连接异常，请稍后重试';
-      const type = this.connectionStatus === 'connected' ? 'success' : 'warning';
-      this.showGlobalMessage(message, type);
     },
 
     async loadHistory() {
@@ -435,15 +346,8 @@ export default {
             createTime: item.createTime
           }));
           
-          // 更新统计中的问题数量
           if (this.userStats) {
             this.userStats.totalQuestions = this.historyList.length;
-          }
-        } else {
-          console.warn('加载历史记录失败:', result.message);
-          if (result.message.includes('认证') || result.message.includes('登录')) {
-            authUtils.clearToken();
-            this.$router.push('/');
           }
         }
       } catch (error) {
@@ -458,12 +362,8 @@ export default {
       try {
         const result = await api.question.getStats();
         if (result.success) {
-          // 合并统计信息
           if (this.userStats) {
-            this.userStats = {
-              ...this.userStats,
-              ...result.data
-            };
+            this.userStats = { ...this.userStats, ...result.data };
           }
         }
       } catch (error) {
@@ -479,7 +379,7 @@ export default {
           if (result.success) {
             this.historyList.splice(index, 1);
             this.showGlobalMessage('删除成功', 'success');
-            await this.loadUserStats(); // 更新统计
+            await this.loadUserStats();
           } else {
             this.showError('删除失败: ' + result.message);
           }
@@ -518,145 +418,134 @@ export default {
       this.clearError();
     },
 
-  async submitQuestion() {
-    if (!this.canSubmit) return;
+    async submitQuestion() {
+      if (!this.canSubmit) return;
 
-    // 再次检查认证状态
-    if (!authUtils.isLoggedIn()) {
-      this.showError('登录已过期，请重新登录');
-      this.$router.push('/');
-      return;
-    }
-
-    this.isLoading = true;
-    this.answer = '';
-    this.errorMessage = '';
-    this.currentQuestion = this.question.trim();
-    this.lastQuestion = this.currentQuestion;
-    this.question = '';
-
-    this.startLoadingAnimation();
-
-    try {
-      const token = authUtils.getToken();
-      if (!token) {
-        throw new Error('请先登录');
+      if (!authUtils.isLoggedIn()) {
+        this.showError('登录已过期，请重新登录');
+        this.$router.push('/');
+        return;
       }
 
-      const response = await fetch('/api/question/ask', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ question: this.currentQuestion }),
-        credentials: 'include'
-      });
+      this.isLoading = true;
+      this.answer = '';
+      this.errorMessage = '';
+      this.currentQuestion = this.question.trim();
+      this.lastQuestion = this.currentQuestion;
+      this.question = '';
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          authUtils.clearToken();
-          throw new Error('登录已过期，请重新登录');
-        }
-        throw new Error(`请求失败: ${response.status}`);
-      }
+      this.startLoadingAnimation();
 
-      // 原生流式读取，边接收边显示
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-
-      while (!done) {
-        const { value, done: streamDone } = await reader.read();
-        if (value) {
-          const chunk = decoder.decode(value, { stream: true });
-          this.answer += chunk;  // 实时追加到回答中
-        }
-        done = streamDone;
-      }
-
-      // 完成后的操作
-      this.onAnswerComplete();
-
-    } catch (error) {
-      console.error('提交问题失败:', error);
-      this.showError('提交问题失败: ' + error.message);
-    
-      if (error.message.includes('登录')) {
-        authUtils.clearToken();
-        setTimeout(() => {
-          this.$router.push('/');
-        }, 2000);
-        }
+      try {
+        // 直接调用RAG服务获取流式回答
+        await this.callRagService(this.currentQuestion);
+        
+      } catch (error) {
+        console.error('提交问题失败:', error);
+        this.showError('提交问题失败: ' + error.message);
       } finally {
         this.isLoading = false;
         this.clearLoadingInterval();
       }
     },
 
-    async processSSEResponse(response) {
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+    // 调用RAG服务获取流式回答
+    async callRagService(question) {
+      try {
+        const response = await fetch(this.ragApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ question: question })
+        });
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        if (!response.ok) {
+          throw new Error(`RAG服务请求失败: ${response.status}`);
+        }
 
-        buffer += decoder.decode(value, { stream: true });
+        // 处理流式响应
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullAnswer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          if (chunk) {
+            fullAnswer += chunk;
+            // 实时更新答案显示
+            this.answer = fullAnswer;
+          }
+        }
+
+        this.answerTime = new Date().toLocaleString();
         
-        const events = buffer.split('\n\n');
-        buffer = events.pop() || '';
-
-        for (const event of events) {
-          if (event.trim()) {
-            this.handleSSEEvent(event);
-          }
+        // 答案获取完成后保存到数据库
+        await this.saveQuestionAnswer(question, fullAnswer);
+        
+        // 刷新历史记录和统计
+        await this.loadHistory();
+        await this.loadUserStats();
+        
+        this.showGlobalMessage('问答完成', 'success');
+        
+      } catch (error) {
+        console.error('调用RAG服务失败:', error);
+        const errorAnswer = `抱歉，RAG服务暂时不可用。错误信息：${error.message}`;
+        this.answer = errorAnswer;
+        
+        // 即使RAG服务失败，也保存错误记录
+        try {
+          await this.saveQuestionAnswer(question, errorAnswer);
+          await this.loadHistory();
+        } catch (saveError) {
+          console.error('保存错误记录失败:', saveError);
         }
+        
+        throw error;
       }
     },
 
-    handleSSEEvent(eventText) {
-      const lines = eventText.split('\n');
-      let eventType = 'data';
-      let eventData = '';
-
-      for (const line of lines) {
-        if (line.startsWith('event:')) {
-          eventType = line.substring(6).trim();
-        } else if (line.startsWith('data:')) {
-          eventData = line.substring(5).trim();
+    // 保存问答记录到数据库
+    async saveQuestionAnswer(question, answer) {
+      try {
+        const token = authUtils.getToken();
+        if (!token) {
+          throw new Error('请先登录');
         }
-      }
 
-      switch (eventType) {
-        case 'start':
-          console.log('开始接收答案');
-          break;
-        case 'data':
-          if (eventData && !eventData.includes('heartbeat')) {
-            this.answer += eventData;
-          }
-          break;
-        case 'complete':
-          console.log('答案接收完成');
-          this.onAnswerComplete();
-          break;
-        case 'error':
-          this.showError(eventData || '服务器返回错误');
-          break;
-      }
-    },
+        const response = await fetch('/api/question/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            question: question,
+            answer: answer
+          })
+        });
 
-    onAnswerComplete() {
-      this.answerTime = new Date().toLocaleString();
-      
-      // 更新历史记录和统计
-      this.loadHistory();
-      this.loadUserStats();
-      
-      // 显示完成提示
-      this.showGlobalMessage('问答完成', 'success');
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.message || '保存失败');
+        }
+
+        if (!result.success) {
+          throw new Error(result.message || '保存失败');
+        }
+
+        console.log('问答记录保存成功');
+        
+      } catch (error) {
+        console.error('保存问答记录失败:', error);
+        // 这里不抛出错误，避免影响用户体验
+        this.showGlobalMessage('答案获取成功，但保存失败', 'warning');
+      }
     },
 
     startLoadingAnimation() {
@@ -676,39 +565,15 @@ export default {
       }
     },
 
-    // Token 监控相关方法
+    // Token监控
     startTokenMonitoring() {
-      console.log('开始Token监控...');
-      
-      // 每分钟检查一次Token状态
       this.tokenCheckInterval = setInterval(() => {
         if (!authUtils.isLoggedIn()) {
-          console.log('Token监控：发现Token已失效');
           this.showGlobalMessage('登录已过期，即将跳转到登录页', 'warning');
-          
           setTimeout(() => {
             this.$router.push('/');
           }, 2000);
-          
           this.stopTokenMonitoring();
-        } else {
-          const remainingTime = authUtils.getTokenRemainingTime();
-          
-          // 剩余时间少于5分钟时提醒
-          if (remainingTime < 5 * 60 && remainingTime > 0) {
-            const minutes = Math.floor(remainingTime / 60);
-            this.showGlobalMessage(`登录将在 ${minutes} 分钟后过期`, 'warning');
-          }
-          
-          // 剩余时间少于1分钟时强制跳转
-          if (remainingTime < 1 * 60) {
-            this.showGlobalMessage('登录即将过期，正在跳转到登录页', 'error');
-            setTimeout(() => {
-              authUtils.clearToken();
-              this.$router.push('/');
-            }, 3000);
-            this.stopTokenMonitoring();
-          }
         }
       }, 60000); // 每分钟检查一次
     },
@@ -717,11 +582,10 @@ export default {
       if (this.tokenCheckInterval) {
         clearInterval(this.tokenCheckInterval);
         this.tokenCheckInterval = null;
-        console.log('Token监控已停止');
       }
     },
 
-    // 实用方法
+    // 工具方法
     copyAnswer() {
       if (this.answer) {
         navigator.clipboard.writeText(this.answer).then(() => {
@@ -729,16 +593,6 @@ export default {
         }).catch(() => {
           this.showError('复制失败');
         });
-      }
-    },
-
-    speakAnswer() {
-      if (this.supportsSpeech && this.answer) {
-        const utterance = new SpeechSynthesisUtterance(this.answer);
-        utterance.lang = 'zh-CN';
-        utterance.rate = 0.8;
-        window.speechSynthesis.speak(utterance);
-        this.showGlobalMessage('开始语音朗读', 'info');
       }
     },
 
@@ -765,7 +619,6 @@ export default {
     },
 
     onQuestionInput() {
-      // 限制输入长度
       if (this.question.length > 1500) {
         this.question = this.question.substring(0, 1500);
         this.showGlobalMessage('问题长度已达到上限', 'warning');
@@ -774,7 +627,7 @@ export default {
 
     loadSampleQuestion(type) {
       const samples = {
-        '症状咨询': '我最近经常头痛，特别是下午的时候，持续了一周了，请问可能是什么原因？',
+        '症状咨询': '我最近经常头痛，特别是下午的时候，持续了一周，请问可能是什么原因？',
         '用药指导': '请问感冒药和消炎药可以一起服用吗？有什么需要注意的？',
         '健康建议': '我想了解如何保持心血管健康，日常生活中应该注意什么？',
         '急救知识': '如果有人突然晕倒了，我应该如何进行急救处理？'
@@ -805,15 +658,10 @@ export default {
 
     async logout() {
       try {
-        console.log('开始退出登录...');
-        
-        // 停止Token监控
         this.stopTokenMonitoring();
         
-        // 调用API注销（可选）
         try {
           await api.auth.logout();
-          console.log('服务器注销成功');
         } catch (logoutError) {
           console.warn('服务器注销失败，但本地状态已清除:', logoutError);
         }
@@ -826,52 +674,14 @@ export default {
         
       } catch (error) {
         console.error('退出登录失败:', error);
-        // 即使退出失败也要清除本地状态
         authUtils.clearToken();
         this.$router.push('/');
-      }
-    },
-
-    // 手动刷新Token（如果支持）
-    async refreshToken() {
-      try {
-        const refreshed = await authUtils.refreshToken();
-        if (refreshed) {
-          this.showGlobalMessage('登录状态已刷新', 'success');
-          return true;
-        } else {
-          this.showGlobalMessage('无法刷新登录状态', 'warning');
-          return false;
-        }
-      } catch (error) {
-        console.error('刷新Token失败:', error);
-        return false;
-      }
-    },
-
-    // 检查并处理Token即将过期的情况
-    handleTokenExpiration() {
-      const remainingTime = authUtils.getTokenRemainingTime();
-      
-      if (remainingTime <= 0) {
-        // Token已过期
-        this.showGlobalMessage('登录已过期，请重新登录', 'error');
-        authUtils.clearToken();
-        this.$router.push('/');
-      } else if (remainingTime < 10 * 60) {
-        // 剩余时间少于10分钟
-        const minutes = Math.floor(remainingTime / 60);
-        this.showGlobalMessage(`登录将在 ${minutes} 分钟后过期`, 'warning');
-        
-        // 可以在这里尝试刷新Token
-        // this.refreshToken();
       }
     }
   },
 
   // 路由守卫
   beforeRouteEnter(to, from, next) {
-    // 进入路由前检查认证状态
     if (!authUtils.isLoggedIn()) {
       console.log('QAPage: 用户未登录，跳转到首页');
       next('/');
@@ -882,25 +692,13 @@ export default {
   },
 
   beforeRouteLeave(to, from, next) {
-    // 离开路由前清理资源
     this.stopTokenMonitoring();
     this.clearLoadingInterval();
     next();
-  },
-
-  // 监听路由变化
-  watch: {
-    $route(to, from) {
-      console.log('QAPage 路由变化:', from.path, '->', to.path);
-      
-      // 如果是从其他页面进入QAPage，重新检查认证
-      if (to.path === '/qna' && from.path !== '/qna') {
-        this.checkAuth();
-      }
-    }
   }
 }
 </script>
+
 <style scoped>
 /* 基础布局 */
 .qa-wrapper {
