@@ -29,7 +29,6 @@ public class SemanticUnderstandingServiceImpl implements SemanticUnderstandingSe
     }
 
     @Override // 实现接口方法
-    // *** 关键修改：方法名从 analyzeText 改为 analyze，以匹配接口 ***
     public SemanticUnderstandingResult analyze(String question) {
         log.info("Calling Flask service for semantic understanding with question: {}", question);
 

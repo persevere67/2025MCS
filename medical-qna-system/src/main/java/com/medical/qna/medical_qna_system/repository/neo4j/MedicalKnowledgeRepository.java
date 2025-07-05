@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface MedicalKnowledgeRepository extends Neo4jRepository<Disease, Long> {
+public interface MedicalKnowledgeRepository extends Neo4jRepository<Disease, String> {
   
     @Query("MATCH (d:Disease)-[:HAS_SYMPTOM]->(s:Symptom) WHERE s.name IN $symptoms " +
            "WITH d, COUNT(DISTINCT s) as matchCount " +

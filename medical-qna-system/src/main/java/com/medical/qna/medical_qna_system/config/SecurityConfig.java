@@ -46,17 +46,18 @@ public class SecurityConfig {
                     "/img/**",
                     "/fonts/**",
                     "/api/auth/**",
-                    "/api/question/health",
-                    "/api/question/spring-health",
-                    "/health",
-                    // *** 新增：允许匿名访问问答API ***
-                    "/api/qa/ask"
+                    "/api/qa/health",          // 更新为 /api/qa/health
+                    "/api/qa/spring-health",   // 更新为 /api/qa/spring-health
+                    "/api/qa/ask",             // 新增：允许匿名访问问答API (包含AC自动机和RAG调用)
+                    "/api/qa/test-python",     // 新增：允许匿名访问测试Python服务的API
+                    "/swagger-ui/**",          // Swagger UI
+                    "/v3/api-docs/**"          // OpenAPI 文档
                 ).permitAll()
-
+                
                 // 所有其他请求需要认证
                 .anyRequest().authenticated()
             )
-
+            
             // 添加JWT过滤器
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -70,7 +71,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

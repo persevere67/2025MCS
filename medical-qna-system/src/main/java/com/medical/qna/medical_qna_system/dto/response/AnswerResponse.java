@@ -1,49 +1,46 @@
-package com.medical.qna.medical_qna_system.dto.response; // 注意：您的文件路径是 dto.response
+package com.medical.qna.medical_qna_system.dto.response;
 
+import com.medical.qna.medical_qna_system.dto.common.SemanticUnderstandingResult; // 导入 SemanticUnderstandingResult
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
-
-// 导入 SemanticUnderstandingResult，因为它包含了 RecommendedQuestion 的定义
-import com.medical.qna.medical_qna_system.dto.common.SemanticUnderstandingResult;
-
-// 如果您有通用的 ApiResponse DTO 并且希望在 AnswerResponse 中包含它，请确保导入
-// import com.medical.qna.medical_qna_system.dto.response.ApiResponse; // 假设您的通用 ApiResponse 在此路径
+import java.util.List; // 导入 List
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
+@AllArgsConstructor // 确保有全参数构造函数
+@NoArgsConstructor // 确保有无参构造函数
 public class AnswerResponse {
-    private String answer; // 你的主要答案内容
-    private LocalDateTime timestamp;
+    private String answer;
+    private LocalDateTime timestamp; // 使用 timestamp 字段名，与 QuestionController 保持一致
     private Long questionId;
-    private DiseaseInfoDto diseaseInfo; // 保留，支持其他功能
-    private List<String> recommendedDepartments; // 保留，支持其他功能
     private String disclaimer = "此回答仅供参考，不能替代专业医生的诊断。如有严重症状，请及时就医。";
 
-    // ****** 新增字段：用于承载 Python 服务返回的推荐问题 ******
-    // 这里的类型是 List<SemanticUnderstandingResult.RecommendedQuestion>
-    private List<SemanticUnderstandingResult.RecommendedQuestion> recommendedQuestions;
+    // 新增字段，用于承载语义理解结果
+    private String identifiedIntent; // 识别出的意图
+    private List<String> identifiedKeywords; // 识别出的关键词
+    private String sourceInfo; // 来源信息，例如RAG检索到的文档摘要
+    private List<SemanticUnderstandingResult.RecommendedQuestion> recommendedQuestions; // 推荐问题列表
 
-    // ****** 可选：如果希望像 Python 那样有一个顶层 ApiResponse，但通常 Java Spring RestController 直接返回 AnswerResponse 并在 HTTP Status Code 中体现成功失败 ******
-    // private ApiResponse apiResponse; // 如果您希望在 AnswerResponse 内部也包含一个通用的 ApiResponse 状态
-
-    // 内部类或单独的 DTO: DiseaseInfoDto
-    // 如果 DiseaseInfoDto 已经在其他文件中定义，请确保它有正确的包路径并被导入。
-    // 否则，您需要在这里或单独的文件中定义它。
-    // 假设 DiseaseInfoDto 已经存在于 com.medical.qna.medical_qna_system.dto 或其他 dto 包下
-    // 如果它还没有定义，这里是一个示例（请根据您的实际数据结构补充）：
-    /*
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class DiseaseInfoDto {
-        private String diseaseName;
-        private String description;
-        // ... 其他疾病相关信息，如症状、治疗方法等
+    // 为了兼容旧的构造函数调用，可以提供一个简化的构造函数
+    // 注意：如果您确定所有 AnswerResponse 都会使用新的完整构造函数，可以移除此简化构造函数。
+    // 但为了兼容性，暂时保留。
+    public AnswerResponse(String answer, LocalDateTime timestamp, Long questionId, String disclaimer) {
+        this.answer = answer;
+        this.timestamp = timestamp;
+        this.questionId = questionId;
+        this.disclaimer = disclaimer;
     }
-    */
+
+    // 提供一个更完整的构造函数，用于在 QuestionServiceImpl 中构建响应
+    // Lombok 的 @AllArgsConstructor 会自动生成一个包含所有字段的构造函数，
+    // 如果您需要自定义构造函数，可以手动编写，但要确保与 @AllArgsConstructor 不冲突。
+    // 这里为了清晰，手动列出这个完整构造函数，它将覆盖 @AllArgsConstructor 生成的默认行为（如果字段顺序不同）。
+    // 建议依赖 @AllArgsConstructor，并确保字段顺序在类定义中是您期望的。
+    // 如果您只使用 @AllArgsConstructor，那么 AnswerResponse 的构造函数将是 (String answer, LocalDateTime timestamp, Long questionId, String disclaimer, String identifiedIntent, List<String> identifiedKeywords, String sourceInfo, List<SemanticUnderstandingResult.RecommendedQuestion> recommendedQuestions)
+    // 请确保 QuestionServiceImpl 中的 new AnswerResponse(...) 调用与实际的构造函数签名匹配。
+    // 为了与 QuestionServiceImpl 中的调用匹配，我们假设 AnswerResponse 有一个包含所有字段的构造函数。
+    // 如果您只使用 @AllArgsConstructor，并且字段顺序如上，那么 QuestionServiceImpl 中的构造函数调用会匹配。
+    // 如果您希望自定义构造函数，请确保其签名与 QuestionServiceImpl 中的调用完全匹配。
 }

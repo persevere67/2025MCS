@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "question_answers")
 @Data
-@Builder
+@Builder // Lombok Builder 会根据字段名生成方法，例如 createAt()
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuestionAnswer {
@@ -25,8 +25,8 @@ public class QuestionAnswer {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String answer;
     
-    @Column(name = "create_at")
-    private LocalDateTime createAt;
+    @Column(name = "create_at") // 确保数据库列名是 create_at
+    private LocalDateTime createAt; // 时间戳字段名为 createAt
     
     @ManyToOne
     @JoinColumn(name = "user_id")
