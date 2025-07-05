@@ -28,9 +28,9 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // 修复CORS配置
-            .sessionManagement(session -> 
+            .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            
+
             .authorizeHttpRequests(auth -> auth
                 // 公开访问的路径
                 .requestMatchers(
@@ -48,13 +48,15 @@ public class SecurityConfig {
                     "/api/auth/**",
                     "/api/question/health",
                     "/api/question/spring-health",
-                    "/health"
+                    "/health",
+                    // *** 新增：允许匿名访问问答API ***
+                    "/api/qa/ask"
                 ).permitAll()
-                
+
                 // 所有其他请求需要认证
                 .anyRequest().authenticated()
             )
-            
+
             // 添加JWT过滤器
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -68,7 +70,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
