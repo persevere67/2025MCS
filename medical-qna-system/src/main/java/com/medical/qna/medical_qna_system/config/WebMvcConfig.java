@@ -3,24 +3,23 @@ package com.medical.qna.medical_qna_system.config;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
-
+import org.springframework.lang.NonNull;
 import java.io.IOException;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+    public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         // 配置静态资源处理
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/")
                 .resourceChain(true)
                 .addResolver(new PathResourceResolver() {
                     @Override
-                    protected Resource getResource(String resourcePath, Resource location) throws IOException {
+                    protected Resource getResource(@NonNull String resourcePath, @NonNull Resource location) throws IOException {
                         Resource requestedResource = location.createRelative(resourcePath);
                         
                         // 如果请求的资源存在，直接返回
