@@ -2,6 +2,7 @@ package com.medical.qna.medical_qna_system.service;
 
 import com.medical.qna.medical_qna_system.dto.request.RegisterRequest;
 import com.medical.qna.medical_qna_system.dto.response.QuestionAnswerDto;
+import com.medical.qna.medical_qna_system.entity.mysql.QuestionAnswer;
 import com.medical.qna.medical_qna_system.entity.mysql.User;
 
 import java.util.List;
@@ -35,4 +36,14 @@ public interface AdminService {
      * 获取用户问答历史（支持分页）
      */
     Page<QuestionAnswerDto> getUserQuestionHistory(Long userId, Pageable pageable);
+
+    QuestionAnswer updateQuestionAnswer(Long id, QuestionAnswerDto request);
+
+    void deleteQuestionAnswer(Long id);
+
+
+    /**
+     * 获取所有问答记录
+     */
+    Page<QuestionAnswerDto> getAllQuestionAnswers(Pageable pageable);
 }

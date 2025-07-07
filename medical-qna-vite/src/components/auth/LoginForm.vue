@@ -293,7 +293,7 @@ export default {
           // 发送登录成功事件
           this.$emit('login-success', result.data)
           
-          // 基于 Token 的直接跳转
+          // 基于 Token 的直接跳转（无需服务器验证）
           console.log('Token 认证成功，执行页面跳转...')
           
           // 短暂延迟确保状态更新

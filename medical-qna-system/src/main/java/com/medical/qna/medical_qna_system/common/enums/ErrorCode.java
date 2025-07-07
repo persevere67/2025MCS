@@ -18,8 +18,10 @@ public enum ErrorCode {
     WEAK_PASSWORD("3004", "密码强度不足"),
     
     // 业务相关
-    QUESTION_TOO_LONG("4001", "问题长度超过限制");
+    QUESTION_TOO_LONG("4001", "问题长度超过限制"),
     
+    QUESTION_ANSWER_NOT_FOUND("4002", "问答记录不存在");
+
     private final String code;
     private final String message;
     

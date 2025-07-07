@@ -23,42 +23,83 @@
           </button>
           
           <button @click="logout" class="action-btn logout-btn">
-            <i class="icon-logout"></i>
-            退出登录
+            <i class="icon-logout"></i> 退出登录
           </button>
         </div>
       </div>
     </div>
 
-    <!-- 搜索区域 -->
+    <!-- 搜索区域：新增双搜索框 -->
     <div class="search-section card">
+      <!-- 用户搜索框 -->
       <div class="search-input-group">
         <input 
-          v-model="searchKeyword" 
-          placeholder="输入关键词搜索问题或答案..." 
-          @input="filterList"
+          v-model="userSearchKeyword" 
+          placeholder="输入用户名或邮箱搜索用户..." 
+          @input="filterUserList"
           class="search-input"
         />
-        <button @click="resetSearch" class="btn btn-secondary">
-          <i class="icon-reset"></i> 重置
+        <button @click="resetUserSearch" class="btn btn-secondary">
+          <i class="icon-reset"></i> 重置用户搜索
+        </button>
+      </div>
+      
+      <!-- 问答搜索框 -->
+      <div class="search-input-group" style="margin-top: 10px;">
+        <input 
+          v-model="qaSearchKeyword" 
+          placeholder="输入问题或答案关键词搜索..." 
+          @input="filterQAList"
+          class="search-input"
+        />
+        <button @click="resetQASearch" class="btn btn-secondary">
+          <i class="icon-reset"></i> 重置问答搜索
         </button>
       </div>
     </div>
 
-    <!-- 数据表格 -->
-    <div class="table-container card">
+    <!-- 用户列表部分 -->
+    <div class="user-list-section card">
+      <h2>用户列表</h2>
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>用户ID</th>
+            <th>用户名</th>
+            <th>邮箱</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="user in filteredUserList" :key="user.id">
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+              <button @click="goToUserHistory(user.id)" class="btn btn-edit">查看问答历史</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 用户问答历史部分 -->
+    <div class="user-question-history-section card" v-if="userQuestionHistory.length > 0">
+      <h2>用户问答历史</h2>
       <table class="qa-table">
         <thead>
           <tr>
-            <th width="80">ID</th>
+            <th>问题ID</th>
+            <th>所属用户</th>
             <th>问题</th>
             <th>答案</th>
             <th width="180">操作</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in filteredList" :key="item.id">
+          <tr v-for="item in filteredQAList" :key="item.id">
             <td>{{ item.id }}</td>
+            <td>{{ getUserById(item.userId)?.username || '未知用户' }}</td>
             <td>
               <input 
                 v-if="editId === item.id" 
@@ -100,12 +141,12 @@
           </tr>
         </tbody>
       </table>
-      
-      <!-- 空状态 -->
-      <div v-if="filteredList.length === 0" class="empty-state">
-        <i class="icon-empty"></i>
-        <p>暂无数据</p>
-      </div>
+    </div>
+
+    <!-- 空状态 -->
+    <div v-if="(filteredUserList.length === 0 && userQuestionHistory.length === 0)" class="empty-state">
+      <i class="icon-empty"></i>
+      <p>暂无数据</p>
     </div>
 
     <!-- 加载状态 -->
@@ -131,8 +172,37 @@ const router = useRouter()
 // 数据相关
 const historyList = ref([])
 const loading = ref(false)
-const searchKeyword = ref('')
-const filteredList = ref([])
+// 分离搜索关键词：用户搜索和问答搜索
+const userSearchKeyword = ref('')  // 用户搜索关键词
+const qaSearchKeyword = ref('')   // 问答搜索关键词
+
+// 过滤后的用户列表（基于用户搜索关键词）
+const filteredUserList = computed(() => {
+  if (!userSearchKeyword.value.trim()) {
+    return userList.value
+  }
+  const keyword = userSearchKeyword.value.toLowerCase()
+  return userList.value.filter(user => 
+    user.username.toLowerCase().includes(keyword) ||
+    user.email.toLowerCase().includes(keyword)
+  )
+})
+
+// 过滤后的问答列表（基于问答搜索关键词）
+const filteredQAList = computed(() => {
+  if (!qaSearchKeyword.value.trim()) {
+    return userQuestionHistory.value
+  }
+  const keyword = qaSearchKeyword.value.toLowerCase()
+  return userQuestionHistory.value.filter(
+    (item) =>
+      item.question.toLowerCase().includes(keyword) ||
+      item.answer.toLowerCase().includes(keyword)
+  )
+})
+
+const userList = ref([]) // 存储用户列表
+const userQuestionHistory = ref([]) // 存储用户问答历史
 
 // 编辑相关
 const editId = ref(null)
@@ -145,6 +215,11 @@ const userInfo = ref(null)
 // 全局消息
 const globalMessage = ref('')
 const globalMessageType = ref('info')
+
+// 根据用户ID获取用户信息
+const getUserById = (userId) => {
+  return userList.value.find(user => user.id === userId)
+}
 
 // 初始化加载数据
 onMounted(async () => {
@@ -183,25 +258,19 @@ const initializePage = async () => {
 const fetchData = async () => {
   try {
     loading.value = true
-    
-    // 这里替换为实际的API调用获取所有问答记录
-    // const response = await api.question.getAllRecords()
-    // if (response.success) {
-    //   historyList.value = response.data
-    //   filteredList.value = [...historyList.value]
-    // }
-    
-    // 模拟API延迟
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    // 模拟数据 - 在实际应用中替换为真实API调用
-    historyList.value = [
-      { id: 1, question: '什么是Vue3？', answer: 'Vue3是前端框架。' },
-      { id: 2, question: 'JavaScript用途？', answer: '前端、后端、全栈开发。' },
-      { id: 3, question: 'React和Vue的区别？', answer: 'React使用JSX，Vue使用模板语法。' },
-      { id: 4, question: '什么是响应式编程？', answer: '数据变化自动更新UI的编程范式。' }
-    ]
-    filteredList.value = [...historyList.value]
+
+    // 调用管理员 API 获取所有用户信息
+    const userResponse = await api.admin.getAllUsers()
+    if (userResponse.success) {
+      userList.value = userResponse.data
+    }
+
+    // 调用管理员 API 获取所有问答记录
+    const response = await api.admin.getAllQuestionAnswers({ page: 0, size: 10 }) // 假设分页参数
+    if (response.success) {
+      userQuestionHistory.value = response.data.content; 
+    }
+
   } catch (error) {
     console.error('获取数据失败:', error)
     showGlobalMessage('获取数据失败: ' + error.message, 'error')
@@ -210,23 +279,45 @@ const fetchData = async () => {
   }
 }
 
-// 过滤功能
-const filterList = () => {
-  if (!searchKeyword.value.trim()) {
-    filteredList.value = [...historyList.value]
-  } else {
-    const keyword = searchKeyword.value.toLowerCase()
-    filteredList.value = historyList.value.filter(
-      (item) =>
-        item.question.toLowerCase().includes(keyword) ||
-        item.answer.toLowerCase().includes(keyword)
-    )
+// 获取用户问答历史
+const getUserQuestionHistoryData = async (userId) => {
+  try {
+    loading.value = true
+    const response = await api.admin.getUserQuestionHistory(userId, { page: 0, size: 10 }) // 假设分页参数
+    if (response.success) {
+      userQuestionHistory.value = response.data.content
+    }
+  } catch (error) {
+    console.error('获取用户问答历史失败:', error)
+    showGlobalMessage('获取用户问答历史失败: ' + error.message, 'error')
+  } finally {
+    loading.value = false
   }
 }
 
-const resetSearch = () => {
-  searchKeyword.value = ''
-  filterList()
+// 跳转到用户历史记录页面
+const goToUserHistory = (userId) => {
+  router.push({ name: 'UserHistory', params: { userId } });
+  // 同时加载该用户的问答历史
+  getUserQuestionHistoryData(userId);
+};
+
+// 用户搜索相关方法
+const filterUserList = () => {
+  // 由computed自动处理过滤
+}
+
+const resetUserSearch = () => {
+  userSearchKeyword.value = ''
+}
+
+// 问答搜索相关方法
+const filterQAList = () => {
+  // 由computed自动处理过滤
+}
+
+const resetQASearch = () => {
+  qaSearchKeyword.value = ''
 }
 
 // 编辑功能
@@ -241,25 +332,21 @@ const saveRecord = async (item) => {
   try {
     loading.value = true
     
-    // 这里替换为实际的API调用
-    // const response = await api.question.updateRecord(item.id, {
-    //   question: editQuestion.value,
-    //   answer: editAnswer.value
-    // })
-    // if (!response.success) {
-    //   throw new Error(response.message)
-    // }
+    // 调用 API 更新记录
+    const response = await api.admin.updateQuestionAnswer(item.id, {
+      question: editQuestion.value,
+      answer: editAnswer.value
+    })
+    if (!response.success) {
+      throw new Error(response.message)
+    }
     
-    // 模拟API延迟
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const index = historyList.value.findIndex((i) => i.id === item.id)
+    const index = userQuestionHistory.value.findIndex((i) => i.id === item.id)
     if (index !== -1) {
-      historyList.value[index].question = editQuestion.value
-      historyList.value[index].answer = editAnswer.value
+      userQuestionHistory.value[index].question = editQuestion.value
+      userQuestionHistory.value[index].answer = editAnswer.value
     }
     editId.value = null
-    filterList()
     showGlobalMessage('保存成功', 'success')
   } catch (error) {
     console.error('保存失败:', error)
@@ -276,17 +363,13 @@ const deleteRecord = async (id) => {
   try {
     loading.value = true
     
-    // 这里替换为实际的API调用
-    // const response = await api.question.deleteRecord(id)
-    // if (!response.success) {
-    //   throw new Error(response.message)
-    // }
+    // 调用 API 删除记录
+    const response = await api.admin.deleteQuestionAnswer(id)
+    if (!response.success) {
+      throw new Error(response.message)
+    }
     
-    // 模拟API延迟
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    historyList.value = historyList.value.filter((item) => item.id !== id)
-    filterList()
+    userQuestionHistory.value = userQuestionHistory.value.filter((item) => item.id !== id)
     showGlobalMessage('删除成功', 'success')
   } catch (error) {
     console.error('删除失败:', error)
