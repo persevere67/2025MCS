@@ -11,7 +11,7 @@
         @refresh="loadHistory"
       />
 
-      <!-- 右侧问答部分 -->
+      <!-- 中间问答部分 -->
       <div class="qa-main">
         <!-- 标题栏 -->
         <header class="title-bar">
@@ -34,16 +34,14 @@
             </div>
             
             <!-- 操作按钮 -->
-            <div class="action-buttons">
-              <button @click="refreshConnection" class="action-btn" :disabled="isRefreshing">
-                <span v-if="isRefreshing">🔄</span>
-                <span v-else>🔄</span>
-                刷新
-              </button>
-              <button @click="logout" class="logout-btn">
-                🚪 退出登录
-              </button>
-            </div>
+            <button @click="refreshConnection" class="action-btn" :disabled="isRefreshing">
+              <span v-if="isRefreshing">🔄</span>
+              <span v-else>🔄</span>
+              刷新
+            </button>
+            <button @click="logout" class="logout-btn">
+              🚪 退出登录
+            </button>
           </div>
         </header>
 
@@ -200,7 +198,32 @@
             </button>
           </div>
         </div>
+
+        <!-- 右侧推荐问题面板 - 移动到这里 -->
+        <!-- 确保 recommendedQuestions 数组有内容时才显示此面板 -->
+        <div class="recommended-questions-panel" v-if="recommendedQuestions && recommendedQuestions.length > 0">
+          <h3>💡 猜您想问</h3>
+          <ul class="recommended-list">
+            <!-- 确保遍历的每个 rec 对象有 questionText 和 score 属性 -->
+            <li v-for="(rec, index) in recommendedQuestions" :key="index" @click="loadRecommendedQuestion(rec.questionText)" class="recommended-item">
+              {{ rec.questionText }}
+              <span v-if="rec.relevanceScore" class="recommended-score">(相关度: {{ rec.relevanceScore.toFixed(2) }})</span>
+            </li>
+          </ul>
+        </div>
+
       </div>
+
+      <!-- 右侧推荐问题面板 (旧位置，已移除) -->
+      <!-- <div class="recommended-questions-panel" v-if="recommendedQuestions && recommendedQuestions.length > 0">
+        <h3>💡 推荐问题</h3>
+        <ul class="recommended-list">
+          <li v-for="(rec, index) in recommendedQuestions" :key="index" @click="loadRecommendedQuestion(rec.questionText)" class="recommended-item">
+            {{ rec.questionText }}
+            <span v-if="rec.relevanceScore" class="recommended-score">(相关度: {{ rec.relevanceScore.toFixed(2) }})</span>
+          </li>
+        </ul>
+      </div> -->
     </div>
 
     <!-- 全局提示组件 -->
@@ -212,11 +235,9 @@
 </template>
 
 <script>
-// QAPage.vue 脚本部分 - 直接调用RAG服务
-
 import HistoryPage from './HistoryPage.vue';
 import logo from '../../assets/logo.png';
-import api, { authUtils } from '@/utils/api';
+import api, { authUtils } from '@/utils/api'; // 确保导入 authUtils
 
 export default {
   components: {
@@ -240,8 +261,13 @@ export default {
       loadingText: "AI助手正在思考您的问题...",
       answerTime: "",
       
-      // RAG服务配置
-      ragApiUrl: "http://localhost:8000/ask",
+      // 新增：推荐问题数据
+      // 确保这里的结构与后端 MedicalRecommendationResponse.RecommendedQuestion 匹配
+      // 后端返回的是 { questionText: "...", questionId: "...", relevantEntities: [], relevanceScore: ... }
+      recommendedQuestions: [], 
+
+      // RAG服务配置 (现在将调用 Spring Boot 后端，后端再调用 RAG)
+      backendAskUrl: "http://localhost:8080/api/qa/ask", // Spring Boot 后端问答接口
       
       // Token 监控
       tokenCheckInterval: null,
@@ -254,7 +280,13 @@ export default {
         "即将为您呈现答案..."
       ],
       loadingTextIndex: 0,
-      loadingInterval: null
+      loadingInterval: null,
+      
+      // 语音朗读支持
+      supportsSpeech: 'speechSynthesis' in window,
+      isRefreshing: false, // 新增：刷新按钮状态
+      connectionStatus: 'unknown', // 新增：连接状态
+      connectionStatusText: '连接中...', // 新增：连接状态文本
     };
   },
   
@@ -274,6 +306,7 @@ export default {
   mounted() {
     console.log('QAPage 组件已挂载');
     this.initializePage();
+    this.checkBackendHealth(); // 页面挂载时检查后端健康状态
   },
   
   beforeUnmount() {
@@ -336,14 +369,15 @@ export default {
     async loadHistory() {
       try {
         this.historyLoading = true;
-        const result = await api.question.getHistory();
+        // 确保 api.question.getHistory() 存在且返回正确的数据结构
+        const result = await api.question.getHistory(); 
         
         if (result.success) {
           this.historyList = result.data.map(item => ({
             id: item.id,
             title: item.question,
             content: item.answer,
-            createTime: item.createTime
+            createTime: item.createAt // 修正：使用 createAt
           }));
           
           if (this.userStats) {
@@ -360,7 +394,8 @@ export default {
 
     async loadUserStats() {
       try {
-        const result = await api.question.getStats();
+        // 确保 api.question.getStats() 存在且返回正确的数据结构
+        const result = await api.question.getStats(); 
         if (result.success) {
           if (this.userStats) {
             this.userStats = { ...this.userStats, ...result.data };
@@ -371,18 +406,16 @@ export default {
       }
     },
 
-    async deleteHistory(index) {
+    async deleteHistory(id) { // 接收 id
       try {
-        const historyItem = this.historyList[index];
-        if (historyItem.id) {
-          const result = await api.question.deleteHistory(historyItem.id);
-          if (result.success) {
-            this.historyList.splice(index, 1);
-            this.showGlobalMessage('删除成功', 'success');
-            await this.loadUserStats();
-          } else {
-            this.showError('删除失败: ' + result.message);
-          }
+        // 确保 api.question.deleteHistory() 存在且返回正确的数据结构
+        const result = await api.question.deleteHistory(id); 
+        if (result.success) {
+          this.historyList = this.historyList.filter(item => item.id !== id); // 根据 id 过滤
+          this.showGlobalMessage('删除成功', 'success');
+          await this.loadUserStats();
+        } else {
+          this.showError('删除失败: ' + result.message);
         }
       } catch (error) {
         console.error('删除历史记录失败:', error);
@@ -396,7 +429,8 @@ export default {
       }
       
       try {
-        const result = await api.question.clearHistory();
+        // 确保 api.question.clearHistory() 存在且返回正确的数据结构
+        const result = await api.question.clearHistory(); 
         if (result.success) {
           this.historyList = [];
           this.showGlobalMessage('历史记录已清空', 'success');
@@ -414,8 +448,9 @@ export default {
       this.question = item.title;
       this.answer = item.content;
       this.currentQuestion = item.title;
-      this.answerTime = new Date(item.createTime).toLocaleString();
+      this.answerTime = new Date(item.createTime).toLocaleString(); // 修正：使用 createTime
       this.clearError();
+      this.recommendedQuestions = []; // 清空推荐问题
     },
 
     async submitQuestion() {
@@ -430,6 +465,7 @@ export default {
       this.isLoading = true;
       this.answer = '';
       this.errorMessage = '';
+      this.recommendedQuestions = []; // 清空推荐问题
       this.currentQuestion = this.question.trim();
       this.lastQuestion = this.currentQuestion;
       this.question = '';
@@ -437,8 +473,8 @@ export default {
       this.startLoadingAnimation();
 
       try {
-        // 直接调用RAG服务获取流式回答
-        await this.callRagService(this.currentQuestion);
+        // 调用 Spring Boot 后端获取流式回答和推荐问题
+        await this.callBackendAskService(this.currentQuestion);
         
       } catch (error) {
         console.error('提交问题失败:', error);
@@ -449,35 +485,108 @@ export default {
       }
     },
 
-    // 调用RAG服务获取流式回答
-    async callRagService(question) {
+    // 新增：调用后端问答接口并处理 SSE 流
+    async callBackendAskService(question) {
+      console.log('开始调用后端问答服务...');
       try {
-        const response = await fetch(this.ragApiUrl, {
+        const token = authUtils.getToken();
+        if (!token) {
+          throw new Error('请先登录以获取认证信息');
+        }
+
+        const response = await fetch(this.backendAskUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // 发送 JWT Token
           },
-          body: JSON.stringify({ question: question })
+          body: JSON.stringify({ question: question }) // 发送 JSON 请求体
         });
 
         if (!response.ok) {
-          throw new Error(`RAG服务请求失败: ${response.status}`);
+          const errorBody = await response.text();
+          console.error('后端服务请求失败响应:', response.status, response.statusText, errorBody);
+          throw new Error(`后端服务请求失败: ${response.status} ${response.statusText} - ${errorBody}`);
         }
 
-        // 处理流式响应
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = '';
         let fullAnswer = '';
 
+        console.log('开始读取SSE流...');
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            console.log('SSE Stream complete.');
+            break;
+          }
 
           const chunk = decoder.decode(value, { stream: true });
-          if (chunk) {
-            fullAnswer += chunk;
-            // 实时更新答案显示
-            this.answer = fullAnswer;
+          buffer += chunk;
+          console.log('收到原始数据块:', chunk);
+          console.log('当前缓冲区内容:', buffer);
+
+          let eventEndIndex;
+          // 查找 SSE 事件分隔符 '\n\n'
+          while ((eventEndIndex = buffer.indexOf('\n\n')) !== -1) {
+            const eventString = buffer.substring(0, eventEndIndex);
+            buffer = buffer.substring(eventEndIndex + 2); // 移除已处理的事件和分隔符
+            console.log('解析到完整事件字符串:', eventString);
+
+            let currentEventName = 'message'; // Default SSE event name
+            let currentEventData = []; // Use an array to collect data lines for this specific event
+
+            const lines = eventString.split('\n');
+            for (const line of lines) {
+                const eventMatch = line.match(/^event:\s*(.*)$/);
+                const dataMatch = line.match(/^data:\s*(.*)$/);
+                const commentMatch = line.match(/^:\s*(.*)$/); // Handle comment lines
+
+                if (eventMatch) {
+                    currentEventName = eventMatch[1].trim();
+                    console.log('  (Regex) Parsed Event Name:', currentEventName);
+                    currentEventData = []; // Reset data for new event
+                } else if (dataMatch) {
+                    currentEventData.push(dataMatch[1].trim());
+                    console.log('  (Regex) Parsed Data Line Content:', dataMatch[1].trim());
+                } else if (commentMatch) {
+                    console.log('  (Regex) Parsed Comment Line (ignored):', commentMatch[1].trim());
+                } else if (line.trim().length > 0) {
+                    // This case handles lines that are not explicitly 'event:', 'data:', or ':',
+                    // but contain content. In SSE, such lines are typically part of the 'data' field
+                    // if they follow a 'data:' line. We'll append them as a continuation.
+                    currentEventData.push(line.trim());
+                    console.log('  (Regex) Parsed Unprefixed Content (as data continuation):', line.trim());
+                }
+            }
+            const finalEventData = currentEventData.join('\n'); // Join all data parts for this event
+            console.log('  Final Event Data for', currentEventName, ':', finalEventData);
+
+
+            if (currentEventName === 'data') {
+              fullAnswer += finalEventData;
+              this.answer = fullAnswer; // 实时更新答案显示
+              console.log('  Updated Answer:', this.answer);
+            } else if (currentEventName === 'recommendedQuestions') {
+              try {
+                const parsedData = JSON.parse(finalEventData);
+                this.recommendedQuestions = parsedData;
+                console.log('  Updated Recommended Questions:', this.recommendedQuestions);
+              } catch (e) {
+                console.error('解析推荐问题 JSON 失败:', e, '原始数据:', finalEventData);
+                this.showError('解析推荐问题时发生错误。');
+              }
+            } else if (currentEventName === 'complete') {
+              console.log('后端发送了 "complete" 事件。');
+              // 可以在这里处理一些完成后的逻辑，但循环会自然结束
+            } else if (currentEventName === 'start') {
+              console.log('后端发送了 "start" 事件。');
+              // 初始消息，例如 "AI助手正在思考您的问题..."
+              if (!this.answer) { // 避免覆盖实际答案
+                 this.answer = finalEventData;
+              }
+            }
           }
         }
 
@@ -493,11 +602,11 @@ export default {
         this.showGlobalMessage('问答完成', 'success');
         
       } catch (error) {
-        console.error('调用RAG服务失败:', error);
-        const errorAnswer = `抱歉，RAG服务暂时不可用。错误信息：${error.message}`;
+        console.error('调用后端问答服务失败:', error);
+        const errorAnswer = `抱歉，AI问答服务暂时不可用。错误信息：${error.message}`;
         this.answer = errorAnswer;
         
-        // 即使RAG服务失败，也保存错误记录
+        // 即使服务失败，也尝试保存错误记录
         try {
           await this.saveQuestionAnswer(question, errorAnswer);
           await this.loadHistory();
@@ -505,7 +614,7 @@ export default {
           console.error('保存错误记录失败:', saveError);
         }
         
-        throw error;
+        throw error; // 重新抛出错误，以便 submitQuestion 的 catch 块处理
       }
     },
 
@@ -517,7 +626,10 @@ export default {
           throw new Error('请先登录');
         }
 
-        const response = await fetch('/api/question/save', {
+        // 确保这里的 API 路径与您的后端 QuestionController 匹配
+        // 如果您的 QuestionController 的 @RequestMapping 是 /api/qa，
+        // 并且 saveQuestionAnswer 是 @PostMapping("/save")，那么路径是 /api/qa/save
+        const response = await fetch('http://localhost:8080/api/qa/save', { // 修正：使用完整路径
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -596,9 +708,20 @@ export default {
       }
     },
 
+    speakAnswer() {
+      if (this.answer && this.supportsSpeech) {
+        const utterance = new SpeechSynthesisUtterance(this.answer);
+        utterance.lang = 'zh-CN'; // Set language to Chinese
+        window.speechSynthesis.speak(utterance);
+      } else if (!this.supportsSpeech) {
+        this.showGlobalMessage('您的浏览器不支持语音朗读。', 'warning');
+      }
+    },
+
     clearAnswer() {
       this.answer = "";
       this.currentQuestion = "";
+      this.recommendedQuestions = []; // 清空推荐问题
       this.clearError();
     },
 
@@ -636,6 +759,12 @@ export default {
       this.question = samples[type] || '';
     },
 
+    // 新增：加载推荐问题到输入框并提交
+    loadRecommendedQuestion(recQuestion) {
+      this.question = recQuestion;
+      this.submitQuestion(); // 自动提交问题
+    },
+
     showError(message) {
       this.errorMessage = message;
       setTimeout(() => {
@@ -661,7 +790,8 @@ export default {
         this.stopTokenMonitoring();
         
         try {
-          await api.auth.logout();
+          // 确保 api.auth.logout() 存在
+          await api.auth.logout(); 
         } catch (logoutError) {
           console.warn('服务器注销失败，但本地状态已清除:', logoutError);
         }
@@ -677,6 +807,42 @@ export default {
         authUtils.clearToken();
         this.$router.push('/');
       }
+    },
+
+    // 新增：检查后端健康状态
+    async checkBackendHealth() {
+      this.connectionStatus = 'unknown';
+      this.connectionStatusText = '连接中...';
+      try {
+        const response = await fetch('http://localhost:8080/api/qa/health'); // 调用后端健康检查接口
+        if (response.ok) {
+          const healthData = await response.json();
+          if (healthData.status === 'healthy') {
+            this.connectionStatus = 'connected';
+            this.connectionStatusText = '服务已连接';
+          } else {
+            this.connectionStatus = 'disconnected';
+            this.connectionStatusText = '服务异常';
+            this.showError('后端服务部分功能异常，请检查日志。');
+          }
+        } else {
+          this.connectionStatus = 'disconnected';
+          this.connectionStatusText = '服务已断开';
+          this.showError('无法连接到后端服务。');
+        }
+      } catch (error) {
+        console.error('检查后端健康状态失败:', error);
+        this.connectionStatus = 'disconnected';
+        this.connectionStatusText = '服务已断开';
+        this.showError('无法连接到后端服务。');
+      }
+    },
+
+    // 新增：刷新连接状态
+    async refreshConnection() {
+      this.isRefreshing = true;
+      await this.checkBackendHealth();
+      this.isRefreshing = false;
     }
   },
 
@@ -714,20 +880,90 @@ export default {
   width: 95%;
   height: 90%;
   background: #ffffff;
-  display: flex;
+  display: flex; /* 保持 flex 布局 */
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0,0,0,0.1);
 }
 
+/* 历史记录部分 */
+/* HistoryPage 组件的样式可能由其自身管理，或者在这里设置 flex 属性 */
+/* 假设 HistoryPage 默认宽度，或者通过 flex-basis 控制 */
+/* .history-page-wrapper { flex: 0 0 250px; } */ /* 如果 HistoryPage 是一个直接的 div */
+
 .qa-main {
-  flex: 1;
+  flex: 3; /* 占据中间大部分空间 */
   display: flex;
   flex-direction: column;
   padding: 24px;
   overflow-y: auto;
   background: linear-gradient(180deg, #fafbfc 0%, #f8f9fa 100%);
+  border-right: 1px solid #e9ecef; /* 添加右边框与推荐面板分隔 */
 }
+
+/* 推荐问题面板样式 */
+.recommended-questions-panel {
+  /* flex: 1; /* 占据剩余空间，例如 1/3 或 1/4 */ /* 移除或覆盖此属性 */
+  background: #f0f2f5; /* 浅灰色背景 */
+  padding: 24px;
+  margin-top: 24px; /* 在其他内容下方添加间距 */
+  border-radius: 16px; /* 与其他卡片保持一致 */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* 添加阴影 */
+  border: 1px solid #e9ecef; /* 添加边框 */
+  /* border-left: 1px solid #e9ecef; /* 左边框与问答主体分隔 */ /* 移除此属性 */
+  overflow-y: auto; /* 保持滚动 */
+}
+
+.recommended-questions-panel h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recommended-questions-panel h3::before {
+  content: '💡'; /* 小灯泡图标 */
+  font-size: 20px;
+}
+
+.recommended-list {
+  list-style: none; /* 移除默认列表样式 */
+  padding: 0;
+  margin: 0;
+}
+
+.recommended-item {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #34495e;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.recommended-item:hover {
+  background: #e7f3ff;
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.1);
+}
+
+.recommended-score {
+  font-size: 12px;
+  color: #888;
+  margin-left: 10px;
+  white-space: nowrap; /* 防止分数换行 */
+}
+
 
 /* 标题栏 */
 .title-bar {
@@ -848,7 +1084,7 @@ export default {
   transform: translateY(-1px);
 }
 
-/* 状态卡片 */
+/* 服务状态卡片 */
 .status-card {
   padding: 16px;
   border-radius: 12px;
@@ -902,6 +1138,11 @@ export default {
 }
 
 /* 输入区域 */
+.input-section {
+  display: flex;
+  flex-direction: column;
+}
+
 .input-area {
   width: 100%;
   min-height: 120px;
@@ -992,6 +1233,9 @@ export default {
 /* 回答区域 */
 .answer-section {
   margin-bottom: 24px;
+  flex-grow: 1; /* 允许回答区域在 qa-main 中增长 */
+  display: flex;
+  flex-direction: column;
 }
 
 .current-question {
@@ -1013,6 +1257,9 @@ export default {
   padding: 24px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   border: 1px solid #e9ecef;
+  flex-grow: 1; /* 让回答卡片填充剩余空间 */
+  display: flex;
+  flex-direction: column;
 }
 
 .answer-header {
@@ -1041,6 +1288,8 @@ export default {
 
 .answer-content {
   line-height: 1.7;
+  flex-grow: 1; /* 让内容区域填充回答卡片剩余空间 */
+  overflow-y: auto; /* 如果内容过多，允许滚动 */
 }
 
 .loading-state {
@@ -1145,6 +1394,7 @@ export default {
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   border: 1px solid #e9ecef;
+  margin-bottom: 24px; /* 添加间距 */
 }
 
 .quick-actions h4 {
@@ -1227,7 +1477,7 @@ export default {
 }
 
 .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes typing {
   0%, 60%, 100% { transform: translateY(0); }
@@ -1282,5 +1532,14 @@ export default {
     align-items: flex-start;
     gap: 12px;
   }
-} 
+
+  /* 移动端隐藏推荐问题面板 */
+  .recommended-questions-panel {
+    display: block; /* 在移动端显示，但不再是侧边栏布局 */
+    width: auto; /* 自动宽度 */
+    margin-left: 0; /* 移除左侧边距 */
+    border-left: none; /* 移除左边框 */
+    /* 其他样式保持不变，或根据需要调整 */
+  }
+}
 </style>
