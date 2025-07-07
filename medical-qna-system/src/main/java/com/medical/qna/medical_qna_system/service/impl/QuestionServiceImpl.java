@@ -204,7 +204,8 @@ public class QuestionServiceImpl implements QuestionService {
     @Transactional(readOnly = true) // 添加事务注解
     public List<QuestionAnswerDto> getUserHistory(Long userId) {
         try {
-            List<QuestionAnswer> history = questionAnswerRepository.findByUserIdOrderByCreateAtDesc(userId); // 修复：使用 findByUserIdOrderByCreateAtDesc
+            // 修复：使用 findByUser_IdOrderByCreateAtDesc
+            List<QuestionAnswer> history = questionAnswerRepository.findByUser_IdOrderByCreateAtDesc(userId);
             List<QuestionAnswerDto> result = history.stream()
                     .map(qa -> QuestionAnswerDto.builder()
                             .id(qa.getId())
@@ -227,8 +228,8 @@ public class QuestionServiceImpl implements QuestionService {
     @Transactional // 添加事务注解
     public boolean deleteQuestionAnswer(Long id, Long userId) {
         try {
-            // 修复：使用 findByIdAndUserId 确保记录属于该用户
-            Optional<QuestionAnswer> qaOpt = questionAnswerRepository.findByIdAndUserId(id, userId);
+            // 修复：使用 findByIdAndUser_Id 确保记录属于该用户
+            Optional<QuestionAnswer> qaOpt = questionAnswerRepository.findByIdAndUser_Id(id, userId);
             if (qaOpt.isPresent()) { // 如果找到了且属于该用户
                 questionAnswerRepository.deleteById(id);
                 log.info("删除问答记录成功: id={}, userId={}", id, userId);
@@ -246,8 +247,8 @@ public class QuestionServiceImpl implements QuestionService {
     @Transactional // 添加事务注解
     public void clearUserHistory(Long userId) {
         try {
-            // 修复：deleteByUserId 现在返回 int
-            int deletedCount = questionAnswerRepository.deleteByUserId(userId);
+            // 修复：调用 deleteByUser_Id
+            int deletedCount = questionAnswerRepository.deleteByUser_Id(userId);
             log.info("清空用户历史记录成功: userId={}, 删除 {} 条记录", userId, deletedCount);
         } catch (Exception e) {
             log.error("清空用户历史记录失败: userId={}", userId, e);
@@ -259,9 +260,9 @@ public class QuestionServiceImpl implements QuestionService {
     @Transactional(readOnly = true) // 添加事务注解
     public List<QuestionAnswerDto> searchUserHistory(Long userId, String keyword) {
         try {
-            // 修复：使用 findByUserIdAndQuestionContainingIgnoreCaseOrderByCreateAtDesc
+            // 修复：使用 findByUser_IdAndQuestionContainingIgnoreCaseOrderByCreateAtDesc
             List<QuestionAnswer> searchResults = questionAnswerRepository
-                    .findByUserIdAndQuestionContainingIgnoreCaseOrderByCreateAtDesc(userId, keyword);
+                    .findByUser_IdAndQuestionContainingIgnoreCaseOrderByCreateAtDesc(userId, keyword);
 
             List<QuestionAnswerDto> result = searchResults.stream()
                     .map(qa -> QuestionAnswerDto.builder()
@@ -286,7 +287,8 @@ public class QuestionServiceImpl implements QuestionService {
     @Transactional(readOnly = true) // 添加事务注解
     public long getUserQuestionCount(Long userId) {
         try {
-            long count = questionAnswerRepository.countByUserId(userId); // 确保Repository有此方法
+            // 修复：调用 countByUser_Id
+            long count = questionAnswerRepository.countByUser_Id(userId);
             log.info("获取用户问答记录总数: userId={}, count={}", userId, count);
             return count;
         } catch (Exception e) {
@@ -300,9 +302,9 @@ public class QuestionServiceImpl implements QuestionService {
     public List<QuestionAnswerDto> getUserRecentHistory(Long userId, int page, int size) {
         try {
             Pageable pageable = PageRequest.of(page, size);
-            // 修复：使用 findByUserIdOrderByCreateAtDesc 返回 Page
+            // 修复：使用 findByUser_IdOrderByCreateAtDesc 返回 Page
             List<QuestionAnswer> recentHistory = questionAnswerRepository
-                    .findByUserIdOrderByCreateAtDesc(userId, pageable).getContent(); // getContent() 获取实际列表
+                    .findByUser_IdOrderByCreateAtDesc(userId, pageable).getContent(); // getContent() 获取实际列表
 
             List<QuestionAnswerDto> result = recentHistory.stream()
                     .map(qa -> QuestionAnswerDto.builder()
@@ -328,8 +330,8 @@ public class QuestionServiceImpl implements QuestionService {
     @Transactional // 添加事务注解
     public int batchDeleteQuestionAnswers(List<Long> ids, Long userId) {
         try {
-            // 修复：直接调用 deleteByIdsAndUserId 进行批量删除
-            int deletedCount = questionAnswerRepository.deleteByIdsAndUserId(ids, userId);
+            // 修复：直接调用 deleteByIdsAndUser_Id 进行批量删除
+            int deletedCount = questionAnswerRepository.deleteByIdsAndUser_Id(ids, userId);
             log.info("批量删除问答记录: userId={}, 请求删除={}条, 成功删除={}条",
                     userId, ids.size(), deletedCount);
             return deletedCount;
@@ -343,7 +345,8 @@ public class QuestionServiceImpl implements QuestionService {
     @Transactional(readOnly = true) // 添加事务注解
     public boolean hasUserQuestions(Long userId) {
         try {
-            boolean exists = questionAnswerRepository.existsByUserId(userId); // 修复：使用 existsByUserId
+            // 修复：使用 existsByUser_Id
+            boolean exists = questionAnswerRepository.existsByUser_Id(userId);
             log.info("检查用户是否有问答记录: userId={}, exists={}", userId, exists);
             return exists;
         } catch (Exception e) {

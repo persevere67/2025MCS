@@ -22,7 +22,7 @@ app = Flask(__name__)
 # *** Neo4j 数据库配置 ***
 # 根据您提供的 spring.neo4j.uri, username, password
 # ====================================================================
-NEO4J_URI = "bolt://10.242.17.41:7687"
+NEO4J_URI = "bolt://10.244.75.42:7687"
 NEO4J_USERNAME = "neo4j"
 NEO4J_PASSWORD = "12345678"
 

@@ -237,21 +237,21 @@ class ApiClient {
   question = {
     // 注意：ask接口使用SSE，不通过这个方法
     // 实际的ask请求在组件中直接使用fetch处理SSE
-    getHistory: () => this.get('/api/question/history'),
-    deleteHistory: (id) => this.delete(`/api/question/history/${id}`),
+    getHistory: () => this.get('/api/qa/history'),
+    deleteHistory: (id) => this.delete(`/api/qa/history/${id}`),
     
-    clearHistory: () => this.delete('/api/question/history'),
+    clearHistory: () => this.delete('/api/qa/history'),
     
-    getStats: () => this.get('/api/question/stats'),
+    getStats: () => this.get('/api/qa/stats'),
     
     // 健康检查接口（公开访问）
-    springHealth: () => this.publicGet('/api/question/spring-health'),
+    springHealth: () => this.publicGet('/api/qa/spring-health'),
     
-    health: () => this.publicGet('/api/question/health'),
+    health: () => this.publicGet('/api/qa/health'),
     
-    testAuth: () => this.get('/api/question/test-auth'),
+    testAuth: () => this.get('/api/qa/test-auth'),
     
-    testPython: () => this.get('/api/question/test-python')
+    testPython: () => this.get('/api/qa/test-python')
   };
 
   // 用户相关接口（如果有的话）

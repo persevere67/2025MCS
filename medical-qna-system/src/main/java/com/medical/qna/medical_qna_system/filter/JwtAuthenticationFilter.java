@@ -34,7 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // 不需要JWT认证的路径列表 - 使用通配符匹配
     private static final List<String> EXCLUDE_PATHS = Arrays.asList(
         "/api/auth/**",              // 所有认证相关接口
-        "/api/question/spring-health", // Spring健康检查
+        "/api/qa/spring-health", // Spring健康检查
         "/",                         // 根路径
         "/index.html",               // 首页
         "/favicon.ico",              // 图标
