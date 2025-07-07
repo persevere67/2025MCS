@@ -1,8 +1,7 @@
 <template>
   <div class="qa-wrapper">
     <div class="qa-container">
-      <!-- 左侧历史记录 -->
-      <HistoryPage 
+      <HistoryPage
         :historyList="historyList"
         :isLoading="historyLoading"
         @delete="deleteHistory"
@@ -11,9 +10,7 @@
         @refresh="loadHistory"
       />
 
-      <!-- 右侧问答部分 -->
       <div class="qa-main">
-        <!-- 标题栏 -->
         <header class="title-bar">
           <div class="title-left">
             <img :src="logo" alt="Logo" class="logo">
@@ -21,25 +18,17 @@
           </div>
           
           <div class="header-actions">
-            <!-- 连接状态 -->
-            <div class="status-indicator" :class="connectionStatus">
+            <div class="status-indicator connected">
               <span class="status-dot"></span>
-              <span class="status-text">{{ connectionStatusText }}</span>
+              <span class="status-text">服务正常</span>
             </div>
             
-            <!-- 统计信息 -->
             <div class="stats-info" v-if="userStats">
               <span class="stats-item">👤 {{ userStats.username }}</span>
               <span class="stats-item">📊 共{{ userStats.totalQuestions }}个问题</span>
             </div>
             
-            <!-- 操作按钮 -->
             <div class="action-buttons">
-              <button @click="refreshConnection" class="action-btn" :disabled="isRefreshing">
-                <span v-if="isRefreshing">🔄</span>
-                <span v-else>🔄</span>
-                刷新
-              </button>
               <button @click="logout" class="logout-btn">
                 🚪 退出登录
               </button>
@@ -47,30 +36,20 @@
           </div>
         </header>
 
-        <!-- 服务状态卡片 -->
-        <div v-if="connectionStatus === 'disconnected'" class="status-card error">
-          <h4>⚠️ 服务连接异常</h4>
-          <p>AI问答服务暂时不可用，请稍后重试或联系管理员</p>
-          <button @click="refreshConnection" class="retry-btn" :disabled="isRefreshing">
-            {{ isRefreshing ? '检查中...' : '重新检查' }}
-          </button>
-        </div>
-
-        <!-- 提问卡片 -->
         <div class="qa-card">
           <div class="card-header">
             <h2>💬 AI医疗助手</h2>
             <div class="input-tips">
-              <span class="tip">💡 提示：请详细描述您的医疗问题，AI助手将为您提供专业建议</span>
+              <span class="tip">💡 提示：请详细描述您的医疗问题，AI助手将为您提供专业建议。支持多轮对话。</span>
             </div>
           </div>
           
           <div class="input-section">
-            <textarea 
-              v-model="question" 
-              placeholder="请详细描述您的症状或医疗问题...&#10;例如：我最近经常头痛，特别是下午的时候，持续了一周了..." 
+            <textarea
+              v-model="question"
+              placeholder="请详细描述您的症状或医疗问题...&#10;例如：我最近经常头痛，特别是下午的时候，持续了一周了..."
               class="input-area"
-              :disabled="isLoading || connectionStatus === 'disconnected'"
+              :disabled="isLoading"
               @keydown.ctrl.enter="submitQuestion"
               @input="onQuestionInput"
               rows="4"
@@ -85,17 +64,17 @@
               </div>
               
               <div class="submit-section">
-                <button 
-                  @click="clearInput" 
+                <button
+                  @click="clearInput"
                   class="clear-btn"
                   v-if="question.trim()"
                   :disabled="isLoading"
                 >
                   🗑️ 清空
                 </button>
-                <button 
-                  @click="submitQuestion" 
-                  :disabled="!canSubmit" 
+                <button
+                  @click="submitQuestion"
+                  :disabled="!canSubmit"
                   class="submit-btn"
                   :class="{ 'pulse': question.trim() && !isLoading }"
                 >
@@ -112,15 +91,12 @@
           </div>
         </div>
 
-        <!-- 回答展示区域 -->
         <div v-if="showAnswerArea" class="answer-section">
-          <!-- 当前问题显示 -->
           <div v-if="currentQuestion" class="current-question">
             <h4>📝 您的问题：</h4>
             <p>{{ currentQuestion }}</p>
           </div>
 
-          <!-- AI回答卡片 -->
           <div class="answer-card">
             <div class="answer-header">
               <h3>
@@ -155,7 +131,7 @@
               </div>
               
               <div v-if="answer" class="answer-text">
-                <div class="answer-body">{{ answer }}</div>
+                <div class="answer-body" v-html="answer"></div>
                 <div class="answer-footer" v-if="!isLoading">
                   <span class="answer-time">回答于 {{ answerTime }}</span>
                   <span class="answer-length">{{ answer.length }} 字符</span>
@@ -165,7 +141,6 @@
           </div>
         </div>
 
-        <!-- 错误提示卡片 -->
         <div v-if="errorMessage" class="error-card">
           <div class="error-header">
             <h4>❌ 出现错误</h4>
@@ -182,7 +157,6 @@
           </div>
         </div>
 
-        <!-- 快捷操作面板 -->
         <div class="quick-actions" v-if="!isLoading">
           <h4>🔧 快捷操作</h4>
           <div class="action-grid">
@@ -203,7 +177,6 @@
       </div>
     </div>
 
-    <!-- 全局提示组件 -->
     <div v-if="globalMessage" class="global-message" :class="globalMessageType">
       <span>{{ globalMessage }}</span>
       <button @click="globalMessage = ''" class="close-btn">✕</button>
@@ -212,8 +185,6 @@
 </template>
 
 <script>
-// QAPage.vue 脚本部分 - 直接调用RAG服务
-
 import HistoryPage from './HistoryPage.vue';
 import logo from '../../assets/logo.png';
 import api, { authUtils } from '@/utils/api';
@@ -231,6 +202,7 @@ export default {
       currentQuestion: "",
       lastQuestion: "",
       historyList: [],
+      chatHistory: [], // 我们用一个新的数组来专门管理用于API的对话历史
       userStats: null,
       isLoading: false,
       historyLoading: false,
@@ -239,9 +211,6 @@ export default {
       globalMessageType: "info",
       loadingText: "AI助手正在思考您的问题...",
       answerTime: "",
-      
-      // RAG服务配置
-      ragApiUrl: "http://localhost:8000/ask",
       
       // Token 监控
       tokenCheckInterval: null,
@@ -254,7 +223,10 @@ export default {
         "即将为您呈现答案..."
       ],
       loadingTextIndex: 0,
-      loadingInterval: null
+      loadingInterval: null,
+      
+      // 语音合成
+      supportsSpeech: 'speechSynthesis' in window,
     };
   },
   
@@ -399,6 +371,7 @@ export default {
         const result = await api.question.clearHistory();
         if (result.success) {
           this.historyList = [];
+          this.chatHistory = []; // 同时清空API对话历史
           this.showGlobalMessage('历史记录已清空', 'success');
           await this.loadUserStats();
         } else {
@@ -430,122 +403,116 @@ export default {
       this.isLoading = true;
       this.answer = '';
       this.errorMessage = '';
-      this.currentQuestion = this.question.trim();
-      this.lastQuestion = this.currentQuestion;
-      this.question = '';
+      const currentQuestion = this.question.trim();
+      this.currentQuestion = currentQuestion;
+      this.lastQuestion = currentQuestion;
+      this.question = ''; // 清空输入框
 
       this.startLoadingAnimation();
 
+      // 【核心改动】: 准备要发送到后端的对话历史
+      // 我们只发送最近的2轮对话，以防Prompt过长
+      const historyForApi = this.chatHistory.slice(-2);
+
       try {
-        // 直接调用RAG服务获取流式回答
-        await this.callRagService(this.currentQuestion);
+        // 【核心改动】: 在POST的body中加入history
+        const response = await fetch('/api/question/ask', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer my-super-secret-token-for-med-qa'
+            },
+            body: JSON.stringify({
+                question: currentQuestion,
+                history: historyForApi // <--- 传递历史记录
+            }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: response.statusText }));
+            throw new Error(errorData.message || `服务返回错误 ${response.status}`);
+        }
+
+        // 流式处理SSE响应，兼容 chunk 被拆分的极端情况
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let answerText = '';
+        let isAnswerStarted = false;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          // 只要有 data: 就处理（兼容多行/拆分）
+          let dataIdx;
+          while ((dataIdx = buffer.indexOf('data:')) !== -1) {
+            // 找到下一个 data:，再找下一个 data: 或结尾
+            let nextIdx = buffer.indexOf('data:', dataIdx + 5);
+            let chunkStr = nextIdx !== -1 ? buffer.slice(dataIdx, nextIdx) : buffer;
+            // 如果不是完整的 JSON，且不是最后一块，跳出等下次
+            if (!chunkStr.includes('\n\n') && nextIdx === -1) break;
+            // 处理 chunkStr
+            let lines = chunkStr.split('\n');
+            for (let line of lines) {
+              line = line.trim();
+              if (line.startsWith('data:')) {
+                const dataStr = line.replace(/^data:\s*/, '');
+                if (!dataStr) continue;
+                try {
+                  if (dataStr === '{}' || dataStr === '[DONE]') continue;
+                  if (dataStr.startsWith('{') && dataStr.endsWith('}')) {
+                    const obj = JSON.parse(dataStr);
+                    if (obj.token !== undefined) {
+                      isAnswerStarted = true;
+                      answerText += obj.token;
+                      this.answer = answerText;
+                    }
+                  }
+                } catch (e) {
+                  // 不是JSON，忽略
+                }
+              }
+            }
+            // 移除已处理部分
+            buffer = nextIdx !== -1 ? buffer.slice(nextIdx) : '';
+          }
+        }
+        // 结束后再赋值
+        this.answer = answerText;
+        if (!isAnswerStarted) {
+          this.answer = '未收到AI回答内容，可能后端服务异常或知识库无匹配。';
+        }
+        this.onAnswerComplete();
         
       } catch (error) {
         console.error('提交问题失败:', error);
         this.showError('提交问题失败: ' + error.message);
+        this.answer = `抱歉，请求出错。请稍后重试。\n错误详情: ${error.message}`;
       } finally {
         this.isLoading = false;
         this.clearLoadingInterval();
       }
     },
 
-    // 调用RAG服务获取流式回答
-    async callRagService(question) {
-      try {
-        const response = await fetch(this.ragApiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ question: question })
-        });
+    onAnswerComplete() {
+      this.answerTime = new Date().toLocaleString();
+      
+      // 更新用于显示的 historyList (这部分逻辑您已经有了)
+      // 注意：我们在这里手动更新列表，以提供即时反馈，而不是重新调用 loadHistory()
+      this.historyList.push({
+          title: this.currentQuestion,
+          content: this.answer,
+          createTime: this.answerTime
+      });
 
-        if (!response.ok) {
-          throw new Error(`RAG服务请求失败: ${response.status}`);
-        }
+      // 【新增】更新用于API调用的 chatHistory
+      this.chatHistory.push({
+          "question": this.currentQuestion,
+          "answer": this.answer 
+      });
 
-        // 处理流式响应
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullAnswer = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          if (chunk) {
-            fullAnswer += chunk;
-            // 实时更新答案显示
-            this.answer = fullAnswer;
-          }
-        }
-
-        this.answerTime = new Date().toLocaleString();
-        
-        // 答案获取完成后保存到数据库
-        await this.saveQuestionAnswer(question, fullAnswer);
-        
-        // 刷新历史记录和统计
-        await this.loadHistory();
-        await this.loadUserStats();
-        
-        this.showGlobalMessage('问答完成', 'success');
-        
-      } catch (error) {
-        console.error('调用RAG服务失败:', error);
-        const errorAnswer = `抱歉，RAG服务暂时不可用。错误信息：${error.message}`;
-        this.answer = errorAnswer;
-        
-        // 即使RAG服务失败，也保存错误记录
-        try {
-          await this.saveQuestionAnswer(question, errorAnswer);
-          await this.loadHistory();
-        } catch (saveError) {
-          console.error('保存错误记录失败:', saveError);
-        }
-        
-        throw error;
-      }
-    },
-
-    // 保存问答记录到数据库
-    async saveQuestionAnswer(question, answer) {
-      try {
-        const token = authUtils.getToken();
-        if (!token) {
-          throw new Error('请先登录');
-        }
-
-        const response = await fetch('/api/question/save', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            question: question,
-            answer: answer
-          })
-        });
-
-        const result = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(result.message || '保存失败');
-        }
-
-        if (!result.success) {
-          throw new Error(result.message || '保存失败');
-        }
-
-        console.log('问答记录保存成功');
-        
-      } catch (error) {
-        console.error('保存问答记录失败:', error);
-        // 这里不抛出错误，避免影响用户体验
-        this.showGlobalMessage('答案获取成功，但保存失败', 'warning');
-      }
+      this.loadUserStats();
+      this.showGlobalMessage('问答完成', 'success');
     },
 
     startLoadingAnimation() {
@@ -595,11 +562,20 @@ export default {
         });
       }
     },
+    
+    speakAnswer() {
+        if (!this.supportsSpeech || !this.answer) return;
+        const utterance = new SpeechSynthesisUtterance(this.answer);
+        speechSynthesis.speak(utterance);
+    },
 
     clearAnswer() {
       this.answer = "";
       this.currentQuestion = "";
       this.clearError();
+      // 当清除当前回答时，也清空API历史，开始一个新的对话流程
+      this.chatHistory = [];
+      this.showGlobalMessage('对话已重置', 'info');
     },
 
     clearInput() {
@@ -698,6 +674,7 @@ export default {
   }
 }
 </script>
+
 
 <style scoped>
 /* 基础布局 */
