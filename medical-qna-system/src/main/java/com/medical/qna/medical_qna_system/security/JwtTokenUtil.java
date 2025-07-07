@@ -59,18 +59,21 @@ public class JwtTokenUtil {
     /**
      * 验证Token有效性
      */
+
     public boolean validateToken(String token) {
         try {
             Jws<Claims> claims = Jwts.parserBuilder()
-                                 .setSigningKey(key) // 确保密钥正确设置在这里
-                                 .build()
-                                 .parseClaimsJws(token); // 解析JWT
-        return true;
+                                    .setSigningKey(key) // 确保密钥正确设置在这里
+                                    .build()
+                                    .parseClaimsJws(token); // 解析JWT
+            System.out.println("收到的声明信息: " + claims.getBody());
+            return true;
         } catch (JwtException | IllegalArgumentException e) {
-        logger.error("JWT验证失败: {}", e.getMessage());
-        return false;
+            logger.error("JWT验证失败: {}", e.getMessage());
+            return false;
         }
     }
+
 
     
     /**

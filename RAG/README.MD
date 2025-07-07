@@ -1,3 +1,5 @@
+uvicorn main2:app --reload --port 8000
+
 测试：
 
 ```

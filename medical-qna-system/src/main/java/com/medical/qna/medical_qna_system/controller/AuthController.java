@@ -68,7 +68,7 @@ public class AuthController {
             Map<String, Object> data = new HashMap<>();
             data.put("token", token);
             data.put("user", UserDto.fromEntity(user));
-            data.put("expiresIn", 86400); // 24小时
+            data.put("expiresIn", 86400000); // 24小时
             
             return ResponseEntity.ok(ApiResponse.success("登录成功", data));
         } catch (Exception e) {
