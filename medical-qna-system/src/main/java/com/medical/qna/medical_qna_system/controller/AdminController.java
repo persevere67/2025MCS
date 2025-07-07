@@ -1,6 +1,5 @@
 package com.medical.qna.medical_qna_system.controller;
 
-import com.medical.qna.medical_qna_system.dto.request.RegisterRequest;
 import com.medical.qna.medical_qna_system.dto.response.ApiResponse;
 import com.medical.qna.medical_qna_system.dto.response.QuestionAnswerDto;
 import com.medical.qna.medical_qna_system.entity.mysql.QuestionAnswer;
@@ -26,23 +25,6 @@ public class AdminController {
 
     private final AdminService adminService;
 
-    /**
-     * 添加用户
-     */
-    @PostMapping("/users")
-    public ResponseEntity<ApiResponse<User>> addUser(@Valid @RequestBody RegisterRequest request) {
-        User user = adminService.addUser(request);
-        return ResponseEntity.ok(ApiResponse.success("用户添加成功", user));
-    }
-
-    /**
-     * 删除用户
-     */
-    @DeleteMapping("/users/{userId}")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long userId) {
-        adminService.deleteUser(userId);
-        return ResponseEntity.ok(ApiResponse.success("用户删除成功", null));
-    }
 
     /**
      * 获取所有用户信息
