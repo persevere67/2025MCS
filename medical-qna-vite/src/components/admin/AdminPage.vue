@@ -2,7 +2,7 @@
   <div class="admin-container">
     <div class="admin-header">
       <div class="header-left">
-        <h2>问答系统管理后台</h2>
+        <h1 class="admin-title">问答系统管理后台</h1>
         <p class="admin-subtitle">管理问答数据记录</p>
       </div>
       
@@ -60,10 +60,17 @@
 
     <!-- 用户列表部分 -->
     <div class="user-list-section card">
-      <div class ="section-header"></div>
-        <h2><i class="icon-user"></i>用户列表</h2>
+      <h2><i class="icon-user">⭐</i>用户列表</h2>
+      <div class="user-display">
         <span class="user-count">{{ filteredUserList.length }}</span>
+        <div class="username-tags">
+          <span v-for="user in userList" :key="user.id" class="username-tag">
+            {{ user.username }}
+          </span>
+        </div>
+        </div>
       </div>
+
       <div class="table-container"></div>
         <table class="user-table">
           <thead>
@@ -456,11 +463,31 @@ const showGlobalMessage = (message, type = 'info') => {
 
 <style scoped>
 .admin-container {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #333;
+}
+
+.admin-container::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('https://images.unsplash.com/photo-1576091160550-2173dba999ef');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  opacity: 0.2; /* 降低不透明度避免干扰内容 */
+  z-index: -1;
 }
 
 .admin-header {
@@ -476,6 +503,12 @@ const showGlobalMessage = (message, type = 'info') => {
   color: #2c3e50;
   font-size: 28px;
   margin-bottom: 8px;
+}
+
+.admin-title {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 0.5rem;
 }
 
 .admin-subtitle {
@@ -550,6 +583,33 @@ const showGlobalMessage = (message, type = 'info') => {
 .username {
   font-weight: 500;
   color: #2d3748;
+}
+
+.user-display {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-left: 12px;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.username-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 300px;
+  overflow: hidden;
+}
+
+.username-tag {
+  display: inline-block;
+  background-color: #e2e8f0;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 14px;
+  color: #4a5568;
+  white-space: nowrap;
 }
 
 .table-container {
@@ -673,8 +733,9 @@ const showGlobalMessage = (message, type = 'info') => {
 }
 
 .card {
-  background: white;
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
+  backdrop-filter: blur(5px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   transition: transform 0.2s, box-shadow 0.2s;
   padding: 20px;
