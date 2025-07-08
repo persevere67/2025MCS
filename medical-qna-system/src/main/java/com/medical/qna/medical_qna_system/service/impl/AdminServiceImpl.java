@@ -31,7 +31,8 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final QuestionAnswerRepository questionAnswerRepository;
     private final UserService userService;
-
+    // 定义缺失的常量
+    private static final String QUESTION_ANSWER_NOT_FOUND = "未找到问答记录";
     @Override
     public User addUser(RegisterRequest request) {
         return userService.register(request);
@@ -89,4 +90,36 @@ public class AdminServiceImpl implements AdminService {
 
         return new PageImpl<>(questionAnswerDtos, pageable, questionAnswerPage.getTotalElements());
     }
+
+    @Override
+    public QuestionAnswer updateQuestionAnswer(Long id, QuestionAnswerDto request) {
+        QuestionAnswer questionAnswer = questionAnswerRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.QUESTION_ANSWER_NOT_FOUND));
+        questionAnswer.setQuestion(request.getQuestion());
+        questionAnswer.setAnswer(request.getAnswer());
+        return questionAnswerRepository.save(questionAnswer);
+    }
+
+    @Override
+    public void deleteQuestionAnswer(Long id) {
+        questionAnswerRepository.deleteById(id);
+        log.info("问答记录 {} 已删除", id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<QuestionAnswerDto> getAllQuestionAnswers(Pageable pageable) {
+        // 按创建时间倒序查询所有问答记录
+        Page<QuestionAnswer> questionAnswerPage = questionAnswerRepository.findAllByOrderByCreateAtDesc(pageable);
+        
+        // 转换为DTO并包含用户ID
+        return questionAnswerPage.map(qa -> QuestionAnswerDto.builder()
+                .id(qa.getId())
+                .userId(qa.getUser().getId())  // 新增用户ID字段
+                .question(qa.getQuestion())
+                .answer(qa.getAnswer())
+                .createAt(qa.getCreateAt())
+                .build());
+    }
+
 }

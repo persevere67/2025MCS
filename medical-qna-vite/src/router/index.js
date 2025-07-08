@@ -5,6 +5,7 @@ import QAPage from '../components/user/QAPage.vue';
 import AuthContainer from '../components/auth/AuthContainer.vue';
 import AdminPage from '../components/admin/AdminPage.vue';
 import { authUtils } from '@/utils/api';
+import UserHistoryPage from '../components/admin/UserHistoryPage.vue';
 
 const routes = [
   { 
@@ -45,8 +46,18 @@ const routes = [
       role: 'ADMIN',
       title: '管理后台 - 医药问答系统'
     }
-  }
+  },
 
+  { 
+  path: '/user-history/:userId',  // 添加:userId占位符
+  name: 'UserHistory',
+  component: UserHistoryPage,
+  meta: { 
+    requiresAuth: true, 
+    role: 'ADMIN',
+    title: '用户历史记录 - 医药问答系统'
+  }
+}
 ];
 
 const router = createRouter({

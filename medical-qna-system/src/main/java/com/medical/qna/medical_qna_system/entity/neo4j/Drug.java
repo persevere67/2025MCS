@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Node
 @Data
-public class DepartmentCategory {
+public class Drug {
     @Id
-    private String name;
+    private String name; // 药品名称
 }

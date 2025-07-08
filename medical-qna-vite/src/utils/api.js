@@ -260,6 +260,21 @@ class ApiClient {
     
     updateProfile: (data) => this.put('/api/user/profile', data)
   };
+
+   // 管理员相关接口
+admin = {
+  getDashboardData: () => this.get('/api/admin/dashboard'),
+  addUser: (request) => this.post('/api/admin/users', request),
+  deleteUser: (userId) => this.delete(`/api/admin/users/${userId}`),
+  updateUser: (userId, request) => this.put(`/api/admin/users/${userId}`, request),
+  getAllUsers: () => this.get('/api/admin/users'),
+  getUserById: (userId) => this.get(`/api/admin/users/${userId}`),
+   getUserQuestionHistory: (userId, pageable) => this.get(`/api/admin/users/${userId}/history`, pageable),
+  updateQuestionAnswer: (id, data) => this.put(`/api/admin/question-answers/${id}`, data),
+  deleteQuestionAnswer: (id) => this.delete(`/api/admin/question-answers/${id}`),
+  getAllQuestionAnswers: (pageable) => this.get('/api/admin/question-answers', pageable)
+};
+  
 }
 
 // 创建API实例

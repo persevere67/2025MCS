@@ -16,7 +16,7 @@ public class QuestionAnswerDto {
     private Long id;
     private String question;
     private String answer;
-    
+    private Long userId;  // 新增：存储用户ID
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createAt;  // 与实体类保持一致
     
