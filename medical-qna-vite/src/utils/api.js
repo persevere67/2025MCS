@@ -67,7 +67,7 @@ axios.interceptors.response.use(
 
 class ApiClient {
   
-  // 统一处理响应格式
+  // 统一处理响应响应
   _handleResponse(response) {
     // 适配你的后端响应格式
     if (response.data && typeof response.data === 'object') {
@@ -237,22 +237,21 @@ class ApiClient {
   question = {
     // 注意：ask接口使用SSE，不通过这个方法
     // 实际的ask请求在组件中直接使用fetch处理SSE
-    getHistory: () => this.get('/api/question/history'),
+    getHistory: () => this.get('/api/qa/history'),
+    deleteHistory: (id) => this.delete(`/api/qa/history/${id}`),
     
-    deleteHistory: (id) => this.delete(`/api/question/history/${id}`),
+    clearHistory: () => this.delete('/api/qa/history'),
     
-    clearHistory: () => this.delete('/api/question/history'),
-    
-    getStats: () => this.get('/api/question/stats'),
+    getStats: () => this.get('/api/qa/stats'),
     
     // 健康检查接口（公开访问）
-    springHealth: () => this.publicGet('/api/question/spring-health'),
+    springHealth: () => this.publicGet('/api/qa/spring-health'),
     
-    health: () => this.publicGet('/api/question/health'),
+    health: () => this.publicGet('/api/qa/health'),
     
-    testAuth: () => this.get('/api/question/test-auth'),
+    testAuth: () => this.get('/api/qa/test-auth'),
     
-    testPython: () => this.get('/api/question/test-python')
+    testPython: () => this.get('/api/qa/test-python')
   };
 
   // 用户相关接口（如果有的话）
@@ -261,6 +260,21 @@ class ApiClient {
     
     updateProfile: (data) => this.put('/api/user/profile', data)
   };
+
+   // 管理员相关接口
+admin = {
+  getDashboardData: () => this.get('/api/admin/dashboard'),
+  addUser: (request) => this.post('/api/admin/users', request),
+  deleteUser: (userId) => this.delete(`/api/admin/users/${userId}`),
+  updateUser: (userId, request) => this.put(`/api/admin/users/${userId}`, request),
+  getAllUsers: () => this.get('/api/admin/users'),
+  getUserById: (userId) => this.get(`/api/admin/users/${userId}`),
+   getUserQuestionHistory: (userId, pageable) => this.get(`/api/admin/users/${userId}/history`, pageable),
+  updateQuestionAnswer: (id, data) => this.put(`/api/admin/question-answers/${id}`, data),
+  deleteQuestionAnswer: (id) => this.delete(`/api/admin/question-answers/${id}`),
+  getAllQuestionAnswers: (pageable) => this.get('/api/admin/question-answers', pageable)
+};
+  
 }
 
 // 创建API实例

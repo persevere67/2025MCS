@@ -2,7 +2,8 @@ package com.medical.qna.medical_qna_system.service;
 
 import com.medical.qna.medical_qna_system.dto.request.RegisterRequest;
 import com.medical.qna.medical_qna_system.entity.mysql.User;
-
+import com.medical.qna.medical_qna_system.dto.request.UpdateUserRequest;
+// ...existing code...
 import java.util.Optional;
 
 public interface UserService {
@@ -40,4 +41,9 @@ public interface UserService {
      * 检查邮箱是否存在
      */
     boolean existsByEmail(String email);
+
+    /**
+     * 更新用户信息
+     */
+    User updateUser(Long userId, UpdateUserRequest request);
 }

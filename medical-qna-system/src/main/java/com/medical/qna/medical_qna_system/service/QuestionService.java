@@ -1,53 +1,94 @@
 package com.medical.qna.medical_qna_system.service;
 
+import com.medical.qna.medical_qna_system.dto.request.QuestionRequest; // Ensure QuestionRequest is imported
+import com.medical.qna.medical_qna_system.dto.response.AnswerResponse; // Ensure AnswerResponse is imported
 import com.medical.qna.medical_qna_system.dto.response.QuestionAnswerDto;
-import com.medical.qna.medical_qna_system.entity.mysql.QuestionAnswer;
-
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.Consumer; // Used for streaming response callbacks
 
 public interface QuestionService {
-    
+
     /**
-     * 处理问题并流式返回答案
-     * @param question 用户问题
-     * @param chunkConsumer 用于接收答案片段的回调函数
+     * Processes a user question, performs semantic understanding, and retrieves an answer and recommended questions.
+     * This method is primarily used in scenarios where the controller receives a QuestionRequest and expects an AnswerResponse.
+     * @param request The request DTO containing the user's question.
+     * @return The response DTO containing the answer and recommended questions.
+     */
+    AnswerResponse processQuestion(QuestionRequest request);
+
+    /**
+     * Processes a question and streams the answer back.
+     * This method is used for scenarios requiring chunked answer reception, such as Server-Sent Events (SSE).
+     * @param question The user's question.
+     * @param chunkConsumer The callback function to receive answer chunks.
      */
     void processQuestionWithStream(String question, Consumer<String> chunkConsumer);
-    
+
     /**
-     * 处理问题并返回完整答案
-     * @param question 用户问题
-     * @return 完整答案
-     */
-    String processQuestion(String question);
-    
-    /**
-     * 保存问答记录
-     * @param userId 用户ID
-     * @param question 用户问题
-     * @param answer 用户答案
+     * Saves a question-answer record.
+     * @param userId The ID of the user.
+     * @param question The user's question.
+     * @param answer The answer provided.
      */
     void saveQuestionAnswer(Long userId, String question, String answer);
-    
+
     /**
-     * 获取用户历史记录
-     * @param userId 用户ID
-     * @return 历史记录列表
+     * Retrieves a user's question-answer history.
+     * @param userId The ID of the user.
+     * @return A list of question-answer DTOs representing the user's history.
      */
     List<QuestionAnswerDto> getUserHistory(Long userId);
-    
+
     /**
-     * 删除问答记录
-     * @param id 记录ID
-     * @param userId 用户ID
-     * @return 是否删除成功
+     * Deletes a specific question-answer record.
+     * @param id The ID of the record to delete.
+     * @param userId The ID of the user who owns the record.
+     * @return True if the record was successfully deleted, false otherwise.
      */
     boolean deleteQuestionAnswer(Long id, Long userId);
-    
+
     /**
-     * 清空用户的所有历史记录
-     * @param userId 用户ID
+     * Clears all question-answer history for a specific user.
+     * @param userId The ID of the user whose history should be cleared.
      */
     void clearUserHistory(Long userId);
+
+    /**
+     * Searches a user's question-answer history by keyword.
+     * @param userId The ID of the user.
+     * @param keyword The keyword to search for within questions.
+     * @return A list of matching question-answer DTOs.
+     */
+    List<QuestionAnswerDto> searchUserHistory(Long userId, String keyword);
+
+    /**
+     * Gets the total count of question-answer records for a user.
+     * @param userId The ID of the user.
+     * @return The total count of records.
+     */
+    long getUserQuestionCount(Long userId);
+
+    /**
+     * Retrieves a paginated list of a user's most recent question-answer records.
+     * @param userId The ID of the user.
+     * @param page The page number (0-indexed).
+     * @param size The number of records per page.
+     * @return A paginated list of recent question-answer DTOs.
+     */
+    List<QuestionAnswerDto> getUserRecentHistory(Long userId, int page, int size);
+
+    /**
+     * Deletes multiple question-answer records for a user.
+     * @param ids A list of record IDs to delete.
+     * @param userId The ID of the user who owns the records.
+     * @return The number of records successfully deleted.
+     */
+    int batchDeleteQuestionAnswers(List<Long> ids, Long userId);
+
+    /**
+     * Checks if a user has any question-answer records.
+     * @param userId The ID of the user.
+     * @return True if the user has records, false otherwise.
+     */
+    boolean hasUserQuestions(Long userId);
 }

@@ -16,7 +16,7 @@ public class QuestionAnswerDto {
     private Long id;
     private String question;
     private String answer;
-    
+    private Long userId;  // 新增：存储用户ID
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createAt;  // 与实体类保持一致
     
@@ -27,5 +27,12 @@ public class QuestionAnswerDto {
     
     public void setCreateTime(LocalDateTime createTime) {
         this.createAt = createTime;
+    }
+
+    public static QuestionAnswerDto create(String question, String answer) {
+        return QuestionAnswerDto.builder()
+                .question(question)
+                .answer(answer)
+                .build();
     }
 }

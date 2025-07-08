@@ -1,0 +1,74 @@
+# RAG项目的Python依赖列表
+# Python Project Requirements
+
+# \--- 核心深度学习与计算库 ---
+
+# 注意：torch的安装与CUDA版本紧密相关。
+
+# 推荐先根据您的GPU环境，手动运行以下命令安装PyTorch：
+
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+torch==2.5.1
+torchvision==0.20.1
+torchaudio==0.20.1
+
+# 句子转换器与Hugging Face生态
+# 注意：sentence-transformers的版本需要与transformers兼容。
+sentence-transformers==4.1.0
+transformers==4.53.0
+datasets==3.6.0
+huggingface-hub==0.33.1
+safetensors==0.5.3
+tokenizers==0.21.2
+
+#自然语言处理模型
+https://huggingface.co/uer/sbert-base-chinese-nli
+# 注意：本模型无需下载，仅作为来源列出。
+
+# 向量数据库
+
+# 注意：在无GPU的Windows或macOS上使用 faiss-cpu。在有GPU的Linux服务器上，可以替换为 faiss-gpu。
+
+faiss-cpu==1.8.0
+
+# 基础科学计算库
+
+numpy==2.1.2
+pandas==2.3.0
+scikit-learn==1.7.0
+
+# \--- Web服务与API库 ---
+
+# FastAPI及其服务器
+
+fastapi==0.113.0
+uvicorn[standard]==0.30.3
+
+# SSE流式响应支持
+
+sse-starlette==2.2.0
+
+# Pydantic，FastAPI的核心依赖
+
+pydantic==2.8.2
+
+# \--- LLM客户端与认证库 ---
+
+# 用于调用DeepSeek等OpenAI兼容的API
+
+openai==1.42.0
+
+# 用于处理JWT认证（占位符功能）
+
+python-jose[cryptography]==3.3.0
+
+# \--- 其他工具库 ---
+
+# 用于显示进度条
+
+tqdm==4.67.1
+
+# 用于序列化/反序列化Python对象
+
+# pickle 是Python内置库，无需在此列出

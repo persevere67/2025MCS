@@ -179,8 +179,31 @@
       <div v-if="showTerms" class="modal">
         <div class="modal-content">
           <h3>用户协议</h3>
-          <p>这里是用户协议的详细内容...</p>
-          <button @click="showTerms = false" class="close-btn">关闭</button>
+          <div class="terms-text">
+            <p><strong>一、引言</strong><br>
+            欢迎使用我们的医药问答系统（以下简称“本系统”）。使用本系统即表示您同意遵守本协议的所有条款和条件。如不同意，请不要使用本系统。</p>
+
+            <p><strong>二、服务内容</strong><br>
+            本系统基于AI技术提供医药知识问答服务，仅供参考，不能替代专业医疗建议。</p>
+
+            <p><strong>三、用户行为规范</strong></p>
+            <ul>
+              <li>合法使用：不得进行违法、违规或侵权行为。</li>
+              <li>真实信息：需提供真实、准确、完整的个人信息。</li>
+              <li>禁止滥用：不得恶意攻击、干扰或滥用本系统。</li>
+            </ul>
+
+            <p><strong>四、知识产权</strong><br>
+            本系统内容受法律保护，未经授权不得复制、传播或用于商业用途。</p>
+
+            <p><strong>五、责任限制</strong><br>
+            我们尽力提供准确信息，但不对信息完整性、准确性或因使用本系统造成的损失负责。</p>
+
+            <p><strong>六、协议变更</strong><br>
+            我们有权随时修改本协议，修改后将公布，您继续使用即视为同意。</p>
+
+            <button @click="showTerms = false" class="close-btn">关闭</button>
+          </div>
         </div>
       </div>
     </transition>
@@ -190,8 +213,35 @@
       <div v-if="showPrivacy" class="modal">
         <div class="modal-content">
           <h3>隐私政策</h3>
-          <p>这里是隐私政策的详细内容...</p>
-          <button @click="showPrivacy = false" class="close-btn">关闭</button>
+          <div class="terms-text">
+            
+            <p><strong>一、引言</strong><br>
+            我们尊重并保护您的隐私。本隐私政策说明我们如何收集、使用、存储和保护您的个人信息。</p>
+
+            <p><strong>二、信息收集</strong></p>
+            <ul>
+              <li><strong>注册信息：</strong>在您注册本系统时，我们可能收集您的用户名、电子邮件地址、密码等信息。</li>
+              <li><strong>使用信息：</strong>我们会记录您在本系统上的使用行为，包括查询问题、浏览内容等，以提升服务质量。</li>
+            </ul>
+
+            <p><strong>三、信息使用</strong></p>
+            <ul>
+              <li><strong>提供服务：</strong>我们使用您的信息为您提供个性化医药问答服务。</li>
+              <li><strong>数据分析：</strong>对信息进行分析，改进服务与系统性能。</li>
+              <li><strong>遵守法律：</strong>必要时根据法律要求披露您的信息。</li>
+            </ul>
+
+            <p><strong>四、信息保护</strong><br>
+            我们采取合理的安全措施防止信息泄露、丢失和滥用。但请注意，没有绝对安全的措施，无法确保信息的绝对安全。</p>
+
+            <p><strong>五、第三方共享</strong><br>
+            我们不会将您的个人信息出售或出租给第三方。但在必要时，为提供更好的服务，可能与合作伙伴共享信息，并要求其遵守严格的隐私保护规定。</p>
+
+            <p><strong>六、隐私政策变更</strong><br>
+            我们可能不时更新隐私政策。更新后的政策将在本系统公布，您继续使用即表示接受更新内容。</p>
+
+            <button @click="showPrivacy = false" class="close-btn">关闭</button>
+          </div>
         </div>
       </div>
     </transition>
@@ -751,9 +801,9 @@ export default {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4); /* 半透明背景 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -761,12 +811,29 @@ export default {
 }
 
 .modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 80%;
-  max-width: 400px;
+  background: #fff;
+  width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  padding: 24px;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #333;
   position: relative;
+}
+
+.modal-content h3 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  text-align: center;
+  color: #444;
+}
+
+.modal-content p {
+  white-space: pre-wrap;
+  text-align: left;
 }
 
 .close-btn {
