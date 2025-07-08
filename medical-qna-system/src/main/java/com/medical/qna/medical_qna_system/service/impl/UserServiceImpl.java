@@ -100,7 +100,6 @@ public class UserServiceImpl implements UserService {
         return updatedUser;
     }
 
-    // ...existing code...
 
     @Override
     @Transactional(readOnly = true)
@@ -109,7 +108,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
-    // ...existing code...
+
 
     @Override
     @Transactional(readOnly = true)
@@ -118,7 +117,6 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
-    // ...existing code...
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findById(Long id) {
