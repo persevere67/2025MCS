@@ -22,7 +22,8 @@
             {{ formatTime(item.createTime) }}
           </div>
         </div>
-        <button class="delete-btn" @click="$emit('delete', index)" :title="'删除: ' + item.title">
+        <!-- 修正：将 index 更改为 item.id，确保传递的是数据库记录的实际ID -->
+        <button class="delete-btn" @click="$emit('delete', item.id)" :title="'删除: ' + item.title">
           ×
         </button>
       </li>
@@ -31,6 +32,7 @@
 </template>
 
 <script>
+// 文件路径: E:\2025MCS\medical-qna-vite\src\components\user\HistoryPage.vue
 export default {
   name: 'HistoryPage',
   props: {
@@ -253,4 +255,5 @@ export default {
   .history-item {
     padding: 10px 12px;
   }
-}</style>
+}
+</style>
