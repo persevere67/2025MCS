@@ -35,7 +35,7 @@ public class SecurityConfig {
                 // 1. 公开访问的API接口 (最具体，最优先匹配)
                 .requestMatchers(
                     "/api/auth/**",            // 认证相关接口 (登录、注册)
-                    "/api/qa/health",          // 后端统一的健康检查接口
+                    "/health",          // 后端统一的健康检查接口
                     "/api/qa/spring-health",   // Spring Boot 服务健康检查接口
                     "/api/qa/ask",             // 问答API (流式和非流式)
                     "/api/qa/test-python",     // 测试Python服务的API

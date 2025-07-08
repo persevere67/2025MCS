@@ -1,6 +1,7 @@
 # E:\2025MCS\AC_AUTOMATON_SERVICE\app.py
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS # 导入 CORS
 import os
 import sys
 from neo4j import GraphDatabase # 导入 Neo4j 驱动
@@ -17,12 +18,21 @@ from utils.entity_extractor import EntityExtractor
 from utils.intent_classifier import RuleBasedIntentClassifier
 
 app = Flask(__name__)
+# ====================================================================
+# *** 添加 CORS 支持 ***
+# 允许来自 'http://localhost:5173' 的所有请求。
+# 在生产环境中，建议将 origins 限制为您的前端域名。
+# ====================================================================
+CORS(app, resources={r"/process_query": {"origins": "http://localhost:5173"}})
+# 如果您想允许所有来源（仅限开发环境），可以使用：
+# CORS(app)
+
 
 # ====================================================================
 # *** Neo4j 数据库配置 ***
 # 根据您提供的 spring.neo4j.uri, username, password
 # ====================================================================
-NEO4J_URI = "bolt://10.244.75.42:7687"
+NEO4J_URI = "bolt://10.242.17.41:7687"
 NEO4J_USERNAME = "neo4j"
 NEO4J_PASSWORD = "12345678"
 
@@ -419,8 +429,6 @@ def generate_recommended_questions(query_text, extracted_entities, predicted_int
 def process_query():
     data = request.get_json()
     query_text = data.get('queryText') # 与 Java DTO 的 queryText 字段匹配
-    # sessionId = data.get('sessionId') # 如果需要，可以在这里获取
-    # userId = data.get('userId') # 如果需要，可以在这里获取
 
     if not query_text:
         return jsonify({"apiResponse": {"code": 400, "message": "Missing 'queryText' in request body"}}), 400
@@ -433,8 +441,6 @@ def process_query():
     extracted_entities_raw = entity_extractor.extract_entities(query_text)
     
     # 转换为 identifiedKeywords (List<String>)
-    # extracted_entities_raw 是 [{'text': '高血压', 'type': 'Disease', ...}, ...]
-    # identifiedKeywords 只是 ['高血压', ...]
     identified_keywords = [e['text'] for e in extracted_entities_raw]
 
     # 调用意图分类器
@@ -462,9 +468,5 @@ def process_query():
     return jsonify(response_data)
 
 if __name__ == '__main__':
-    # 运行Flask应用
-    # host='0.0.0.0' 允许从任何网络接口访问 (例如，如果Java在另一台机器上)
-    # port=5000 是服务监听的端口
-    # debug=True 仅用于开发，生产环境请设置为False或使用Gunicorn/uWSGI
     print("Starting Flask AC_AUTOMATON_SERVICE...")
     app.run(host='0.0.0.0', port=5000, debug=True)
