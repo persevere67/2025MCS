@@ -60,23 +60,38 @@
 
     <!-- 用户列表部分 -->
     <div class="user-list-section card">
-      <h2>用户列表</h2>
-      <table class="user-table">
-        <thead>
-          <tr>
-            <th>用户ID</th>
-            <th>用户名</th>
-            <th>邮箱</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="user in filteredUserList" :key="user.id">
-            <td>{{ user.id }}</td>
-            <td>{{ user.username }}</td>
-            <td>{{ user.email }}</td>
-            <td>
-              <button @click="goToUserHistory(user.id)" class="btn btn-edit">查看问答历史</button>
+      <div class ="section-header"></div>
+        <h2><i class="icon-user"></i>用户列表</h2>
+        <span class="user-count">{{ filteredUserList.length }}</span>
+      </div>
+      <div class="table-container"></div>
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th class="id-col">用户ID</th>
+              <th class="username-col">用户名</th>
+              <th class="email-col">邮箱</th>
+              <th class="actions-col">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="user in filteredUserList" :key="user.id" class="user-row">
+              <td class="id-col">
+                <span class="user-id-badge">{{ user.id }}</span>
+              </td>
+              <td class="name-col">
+                <div class="username-wrapper">
+                  <span class="user-avatar">{{ user.username.charAt(0).toUpperCase() }}</span>
+                  <span class="username">{{ user.username }}</span>
+                </div>
+              </td>
+              <td class="email-col">
+                <a :href="'mailto:${user.email}'" class="email-link">{{ user.email }}</a>
+              </td>
+              <td class="actions-col">
+                <button @click="goToUserHistory(user.id)" class="btn btn-view">
+                  <i class="icon-history"></i> 历史记录
+                </button>
             </td>
           </tr>
         </tbody>
@@ -159,7 +174,6 @@
       <span>{{ globalMessage }}</span>
       <button @click="globalMessage = ''" class="close-btn">✕</button>
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -465,9 +479,11 @@ const showGlobalMessage = (message, type = 'info') => {
 }
 
 .admin-subtitle {
-  color: #7f8c8d;
-  font-size: 16px;
-  margin: 0;
+  background: linear-gradient(90deg, #4299e1, #3182ce);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-block;
 }
 
 .header-right {
@@ -481,21 +497,113 @@ const showGlobalMessage = (message, type = 'info') => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #f8f9fa;
+  background: linear-gradient(135deg, #f7fafc, #ebf8ff);
   border-radius: 12px;
-  border: 1px solid #e9ecef;
+  border: 1px solid #bee3f8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.user-list-section {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #2d3748;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-count {
+  font-size: 14px;
+  color: #718096;
+  background: #edf2f7;
+  padding: 4px 10px;
+  border-radius: 12px;
 }
 
 .user-avatar {
-  font-size: 20px;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #4299e1;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #667eea;
-  color: white;
-  border-radius: 50%;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.username {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.user-table th {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a5568;
+  background-color: #f7fafc;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.user-table td {
+  padding: 16px;
+  border-bottom: 1px solid #edf2f7;
+  vertical-align: middle;
+}
+
+.id-col { width: 120px; }
+.name-col { width: 180px; }
+.email-col { min-width: 200px; }
+.action-col { width: 140px; }
+
+.user-id-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #ebf8ff;
+  color: #3182ce;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: monospace;
+}
+
+.username-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+.user-row:hover {
+  background-color: #f8fafc;
 }
 
 .user-details {
@@ -567,7 +675,8 @@ const showGlobalMessage = (message, type = 'info') => {
 .card {
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s, box-shadow 0.2s;
   padding: 20px;
   margin-bottom: 20px;
 }
@@ -602,13 +711,19 @@ const showGlobalMessage = (message, type = 'info') => {
 
 .qa-table {
   width: 100%;
+  border-radius: 8px;
+  border: 1px solid #ddd;
   border-collapse: collapse;
+  overflow: auto;
 }
 
 .qa-table th {
-  background-color: #f8f9fa;
+  background-color: linear-gradient(135deg, #4299e1, #3182ce);
   color: #495057;
   font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
   text-align: left;
   padding: 12px 15px;
   border-bottom: 2px solid #e9ecef;
@@ -621,7 +736,8 @@ const showGlobalMessage = (message, type = 'info') => {
 }
 
 .qa-table tr:hover td {
-  background-color: #f8f9fa;
+  background-color: #ebf8ff;
+  transform: scale(1.01);
 }
 
 .edit-input {
@@ -688,6 +804,68 @@ const showGlobalMessage = (message, type = 'info') => {
 
 .btn-delete:hover {
   background-color: #c82333;
+}
+
+.btn-view {
+  background-color: #4299e1;
+  color: white;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btn-view:hover {
+  background-color: #3182ce;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 无用户状态 */
+.no-users {
+  padding: 40px 0;
+  text-align: center;
+  color: #a0aec0;
+}
+
+.no-users i {
+  font-size: 48px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.no-users p {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* 图标样式 */
+.icon-users::before { content: "👥"; }
+.icon-history::before { content: "🕒"; }
+.icon-search-empty::before { content: "🔍"; }
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .user-count {
+    align-self: flex-start;
+  }
+  
+  .user-table th, .user-table td {
+    padding: 12px;
+  }
+  
+  .btn-view {
+    padding: 6px 10px;
+  }
 }
 
 .empty-state {

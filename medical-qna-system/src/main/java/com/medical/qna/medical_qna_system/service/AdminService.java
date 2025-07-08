@@ -1,6 +1,7 @@
 package com.medical.qna.medical_qna_system.service;
 
 import com.medical.qna.medical_qna_system.dto.request.RegisterRequest;
+import com.medical.qna.medical_qna_system.dto.request.UpdateUserRequest;
 import com.medical.qna.medical_qna_system.dto.response.QuestionAnswerDto;
 import com.medical.qna.medical_qna_system.entity.mysql.QuestionAnswer;
 import com.medical.qna.medical_qna_system.entity.mysql.User;
@@ -20,7 +21,10 @@ public interface AdminService {
      */
     void deleteUser(Long userId);
 
-
+    /**
+     * 更新用户信息
+     */
+    User updateUser(Long userId, UpdateUserRequest request);
 
     /**
      * 获取所有用户信息

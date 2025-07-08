@@ -2,6 +2,7 @@ package com.medical.qna.medical_qna_system.service.impl;
 
 import com.medical.qna.medical_qna_system.common.enums.ErrorCode;
 import com.medical.qna.medical_qna_system.dto.request.RegisterRequest;
+import com.medical.qna.medical_qna_system.dto.request.UpdateUserRequest;
 import com.medical.qna.medical_qna_system.dto.response.QuestionAnswerDto;
 import com.medical.qna.medical_qna_system.entity.mysql.QuestionAnswer;
 import com.medical.qna.medical_qna_system.entity.mysql.User;
