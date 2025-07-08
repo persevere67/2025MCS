@@ -113,7 +113,7 @@ class RAGSystem:
                 model=CONFIG['llm_model_name'],
                 messages=[{"role": "user", "content": prompt}],
                 stream=True,
-                temperature=0.5
+                temperature=0.8
             )
             for chunk in stream:
                 content = chunk.choices[0].delta.content
