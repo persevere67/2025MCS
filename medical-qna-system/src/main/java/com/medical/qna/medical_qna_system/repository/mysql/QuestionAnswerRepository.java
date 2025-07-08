@@ -76,4 +76,6 @@ public interface QuestionAnswerRepository extends JpaRepository<QuestionAnswer, 
     @Modifying
     @Query("DELETE FROM QuestionAnswer qa WHERE qa.id IN :ids AND qa.user.id = :userId")
     int deleteByIdsAndUserId(@Param("ids") List<Long> ids, @Param("userId") Long userId);
+
+     Page<QuestionAnswer> findAllByOrderByCreateAtDesc(Pageable pageable);
 }

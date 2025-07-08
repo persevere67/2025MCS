@@ -1,7 +1,6 @@
 package com.medical.qna.medical_qna_system.service;
 
 import com.medical.qna.medical_qna_system.dto.response.QuestionAnswerDto;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public interface QuestionService {

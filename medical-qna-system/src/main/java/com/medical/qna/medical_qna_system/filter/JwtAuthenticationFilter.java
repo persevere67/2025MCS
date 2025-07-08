@@ -16,7 +16,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
-
+import org.springframework.lang.NonNull;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,9 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // 不需要JWT认证的路径列表 - 使用通配符匹配
     private static final List<String> EXCLUDE_PATHS = Arrays.asList(
         "/api/auth/**",              // 所有认证相关接口
-        "/api/question/health",      // 健康检查
         "/api/question/spring-health", // Spring健康检查
-        "/health",                   // 备用健康检查
         "/",                         // 根路径
         "/index.html",               // 首页
         "/favicon.ico",              // 图标
@@ -51,7 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     );
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
         String method = request.getMethod();
         
@@ -75,7 +73,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) 
             throws ServletException, IOException {
         
         String path = request.getRequestURI();
@@ -99,7 +97,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             log.debug("请求头中没有找到Bearer token - Path: {}", path);
         }
         
-        // 一旦我们得到token，验证它
+        // 得到token并验证它
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             
             try {
