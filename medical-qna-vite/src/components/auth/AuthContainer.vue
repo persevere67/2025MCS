@@ -30,7 +30,7 @@
 
         <div class="testimonial">
           <div class="quote">"这个平台帮助我快速获得了专业的医疗建议，非常实用！"</div>
-          <div class="author">— 张先生，普通用户</div>
+          <div class="author">— 郭先生，普通用户</div>
         </div>
       </div>
 
@@ -136,18 +136,12 @@ export default {
         },
         {
           id: 2,
-          icon: '👨‍⚕️',
-          title: '专业医生',
-          description: '三甲医院医生在线回答您的健康问题'
-        },
-        {
-          id: 3,
           icon: '🔒',
           title: '隐私保护',
           description: '严格保护用户隐私，医疗数据安全可靠'
         },
         {
-          id: 4,
+          id: 3,
           icon: '⚡',
           title: '快速响应',
           description: '24小时在线服务，快速获得专业建议'
@@ -246,14 +240,6 @@ export default {
   animation-delay: 0s;
 }
 
-.decoration-2 {
-  width: 150px;
-  height: 150px;
-  top: 20%;
-  right: 15%;
-  animation-delay: 2s;
-}
-
 .decoration-3 {
   width: 80px;
   height: 80px;
@@ -262,13 +248,6 @@ export default {
   animation-delay: 4s;
 }
 
-.decoration-4 {
-  width: 120px;
-  height: 120px;
-  bottom: 10%;
-  right: 10%;
-  animation-delay: 1s;
-}
 
 @keyframes float {
   0%, 100% {
@@ -329,19 +308,19 @@ export default {
 }
 
 .feature-icon {
-  font-size: 24px;
+  font-size: 36px;
   flex-shrink: 0;
   margin-top: 4px;
 }
 
 .feature-content h4 {
-  font-size: 18px;
+  font-size: 30px;
   font-weight: 600;
   margin-bottom: 8px;
 }
 
 .feature-content p {
-  font-size: 14px;
+  font-size: 18px;
   opacity: 0.9;
   line-height: 1.5;
 }
@@ -367,12 +346,13 @@ export default {
 }
 
 .form-panel {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 60px;
+  background-image: url('@/assets/bj6.jpg');
+  background-size: cover;
+  background-position: fixed;
+  backdrop-filter: blur(10px);
+  padding: 40px;
   position: relative;
 }
 
@@ -429,7 +409,7 @@ export default {
   gap: 8px;
   margin-top: 24px;
   font-size: 12px;
-  color: #666;
+  color: #ffffff;
 }
 
 .security-icon {

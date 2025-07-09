@@ -480,12 +480,12 @@ export default {
 .form-header h3 {
   font-size: 24px;
   font-weight: 600;
-  color: #333;
+  color: #fffefe;
   margin-bottom: 8px;
 }
 
 .form-header p {
-  color: #666;
+  color: #ffffff;
   font-size: 14px;
 }
 
@@ -519,7 +519,7 @@ export default {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: #333;
+  color: #ffffff;
 }
 
 .required {
@@ -771,7 +771,7 @@ export default {
   text-align: center;
   padding-top: 24px;
   border-top: 1px solid #e1e5e9;
-  color: #666;
+  color: #ffffff;
   font-size: 14px;
 }
 
