@@ -1,74 +1,105 @@
 <template>
-  <div class="user-history-container">
-    <!-- 返回上级界面的按钮 -->
-    <button @click="goBack" class="back-btn">返回上级界面</button>
-    <h2>用户问答历史</h2>
-    <table class="qa-table">
-      <thead>
-        <tr>
-          <th>问题ID</th>
-          <th>问题</th>
-          <th>答案</th>
-          <th width="180">操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="item in userQuestionHistory" :key="item.id">
-          <td>{{ item.id }}</td>
-          <td>
-            <input 
-              v-if="editId === item.id" 
-              v-model="editQuestion" 
-              class="edit-input"
-            />
-            <span v-else>{{ item.question }}</span>
-          </td>
-          <td>
-            <input 
-              v-if="editId === item.id" 
-              v-model="editAnswer" 
-              class="edit-input"
-            />
-            <span v-else>{{ item.answer }}</span>
-          </td>
-          <td class="actions">
-            <button 
-              v-if="editId !== item.id" 
-              @click="editRecord(item)" 
-              class="btn btn-edit"
-            >
-              <i class="icon-edit"></i> 编辑
-            </button>
-            <button 
-              v-if="editId === item.id" 
-              @click="saveRecord(item)" 
-              class="btn btn-save"
-            >
-              <i class="icon-save"></i> 保存
-            </button>
-            <button 
-              @click="deleteRecord(item.id)" 
-              class="btn btn-delete"
-            >
-              <i class="icon-delete"></i> 删除
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <!-- 空状态 -->
-    <div v-if="userQuestionHistory.length === 0" class="empty-state">
-      <i class="icon-empty"></i>
-      <p>暂无历史记录</p>
-    </div>
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading-overlay">
-      <div class="loading-spinner"></div>
-    </div>
-    <!-- 全局提示组件 -->
-    <div v-if="globalMessage" class="global-message" :class="globalMessageType">
-      <span>{{ globalMessage }}</span>
-      <button @click="globalMessage = ''" class="close-btn">✕</button>
+  <div class="user-history-page">
+    <div class="admin-container">
+      <!-- 返回按钮和标题 -->
+      <div class="admin-header">
+        <div class="header-left">
+          <h1 class="admin-title">用户问答历史</h1>
+          <p class="admin-subtitle">用户ID: {{ route.params.userId }}</p>
+        </div>
+        
+        <div class="header-actions">
+          <button @click="goBack" class="action-btn back-btn">
+            <i class="icon-back"></i> 返回
+          </button>
+          <button @click="refreshData" class="action-btn refresh-btn" :disabled="loading">
+            <i class="icon-refresh"></i>
+            {{ loading ? '刷新中...' : '刷新数据' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 问答历史表格 -->
+      <div class="user-question-history-section card">
+        <div class="user-display">
+          <span class="user-count">{{ userQuestionHistory.length }}</span>
+        </div>
+
+        <div class="table-container">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th class="id-col">ID</th>
+                <th class="question-col">问题</th>
+                <th class="answer-col">答案</th>
+                <th class="actions-col">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in userQuestionHistory" :key="item.id" class="user-row">
+                <td class="id-col">
+                  <span class="user-id-badge">{{ item.id }}</span>
+                </td>
+                <td class="question-col">
+                  <input 
+                    v-if="editId === item.id" 
+                    v-model="editQuestion" 
+                    class="edit-input"
+                  />
+                  <span v-else>{{ item.question }}</span>
+                </td>
+                <td class="answer-col">
+                  <input 
+                    v-if="editId === item.id" 
+                    v-model="editAnswer" 
+                    class="edit-input"
+                  />
+                  <span v-else>{{ item.answer }}</span>
+                </td>
+                <td class="actions-col">
+                  <button 
+                    v-if="editId !== item.id" 
+                    @click="editRecord(item)" 
+                    class="btn btn-edit"
+                  >
+                    <i class="icon-edit"></i> 编辑
+                  </button>
+                  <button 
+                    v-if="editId === item.id" 
+                    @click="saveRecord(item)" 
+                    class="btn btn-save"
+                  >
+                    <i class="icon-save"></i> 保存
+                  </button>
+                  <button 
+                    @click="deleteRecord(item.id)" 
+                    class="btn btn-delete"
+                  >
+                    <i class="icon-delete"></i> 删除
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 空状态 -->
+      <div v-if="userQuestionHistory.length === 0 && !loading" class="empty-state">
+        <i class="icon-empty">☹</i>
+        <p>暂无历史记录</p>
+      </div>
+
+      <!-- 加载状态 -->
+      <div v-if="loading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+      </div>
+
+      <!-- 全局提示组件 -->
+      <div v-if="globalMessage" class="global-message" :class="globalMessageType">
+        <span>{{ globalMessage }}</span>
+        <button @click="globalMessage = ''" class="close-btn">✕</button>
+      </div>
     </div>
   </div>
 </template>
@@ -125,21 +156,17 @@ const initializePage = async () => {
 }
 
 // 从API获取数据
-// UserHistoryPage.vue 的 fetchData 方法
 const fetchData = async () => {
   try {
     loading.value = true;
     const userId = route.params.userId;
-    // 检查userId是否存在
     if (!userId) {
       showGlobalMessage('用户ID不存在', 'error');
       return;
     }
-    // 明确分页参数（page从0开始，size为每页条数）
     const response = await api.admin.getUserQuestionHistory(userId, { page: 0, size: 10 });
     if (response.success) {
       userQuestionHistory.value = response.data.content || [];
-      // 显示空状态提示
       if (userQuestionHistory.value.length === 0) {
         showGlobalMessage('该用户暂无问答记录', 'info');
       }
@@ -154,6 +181,12 @@ const fetchData = async () => {
   }
 };
 
+// 刷新数据
+const refreshData = async () => {
+  await fetchData()
+  showGlobalMessage('数据已刷新', 'success')
+}
+
 // 编辑功能
 const editRecord = (item) => {
   editId.value = item.id
@@ -166,7 +199,6 @@ const saveRecord = async (item) => {
   try {
     loading.value = true
     const userId = route.params.userId
-    // 调用 API 更新记录
     const response = await api.admin.updateQuestionAnswer(item.id, {
       question: editQuestion.value,
       answer: editAnswer.value
@@ -197,7 +229,6 @@ const deleteRecord = async (id) => {
   try {
     loading.value = true
     const userId = route.params.userId
-    // 调用 API 删除记录
     const response = await api.admin.deleteQuestionAnswer(id)
     if (!response.success) {
       throw new Error(response.message)
@@ -232,15 +263,64 @@ const showGlobalMessage = (message, type = 'info') => {
 </script>
 
 <style scoped>
-.user-history-container {
+.user-history-page {
+  background-image: url('@/assets/bj5.jpg');
+  background-size: cover;
+  background-position: relative;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.admin-container {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  z-index: 100;
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #333;
+  overflow: hidden;
 }
 
-.back-btn {
+.admin-header {
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.header-left h2 {
+  color: #2c3e50;
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.admin-title {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.admin-subtitle {
+  background: linear-gradient(90deg, #4299e1, #3182ce);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -252,9 +332,11 @@ const showGlobalMessage = (message, type = 'info') => {
   cursor: pointer;
   transition: all 0.3s ease;
   gap: 6px;
+}
+
+.back-btn {
   background-color: #6c757d;
   color: white;
-  margin-bottom: 20px;
 }
 
 .back-btn:hover {
@@ -262,28 +344,91 @@ const showGlobalMessage = (message, type = 'info') => {
   transform: translateY(-1px);
 }
 
-.qa-table {
+.refresh-btn {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background-color: #138496;
+  transform: translateY(-1px);
+}
+
+.refresh-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.user-question-history-section {
+  position: relative;
+  z-index: 10;
+  background-color: rgba(255, 255, 255, 0.7);
+  border: 1px solid #e2e8f0;
+  isolation: isolate;
+}
+
+.user-display {
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  border-collapse: collapse;
+  margin-left: 12px;
+  align-items: flex-start;
+  gap: 10px;
 }
 
-.qa-table th {
-  background-color: #f8f9fa;
-  color: #495057;
+.user-count {
+  font-size: 14px;
+  color: #718096;
+  background: #edf2f7;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.user-table th {
+  padding: 12px 16px;
+  font-size: 14px;
   font-weight: 600;
+  color: #4a5568;
+  background-color: #f7fafc;
   text-align: left;
-  padding: 12px 15px;
-  border-bottom: 2px solid #e9ecef;
+  position: sticky;
+  top: 0;
 }
 
-.qa-table td {
-  padding: 12px 15px;
-  border-bottom: 1px solid #e9ecef;
+.user-table td {
+  padding: 16px;
+  border-bottom: 1px solid #edf2f7;
   vertical-align: middle;
 }
 
-.qa-table tr:hover td {
-  background-color: #f8f9fa;
+.id-col { width: 120px; }
+.question-col { min-width: 250px; }
+.answer-col { min-width: 250px; }
+.actions-col { width: 180px; }
+
+.user-id-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #ebf8ff;
+  color: #3182ce;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: monospace;
+}
+
+.user-row:hover {
+  background-color: #f8fafc;
 }
 
 .edit-input {
@@ -292,11 +437,13 @@ const showGlobalMessage = (message, type = 'info') => {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+  background-color: #fff;
 }
 
-.actions {
+.actions-col {
   display: flex;
   gap: 8px;
+  justify-content: flex-start;
 }
 
 .btn {
@@ -314,15 +461,6 @@ const showGlobalMessage = (message, type = 'info') => {
 
 .btn i {
   margin-right: 6px;
-}
-
-.btn-secondary {
-  background-color: #6c757d;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background-color: #5a6268;
 }
 
 .btn-edit {
@@ -350,6 +488,16 @@ const showGlobalMessage = (message, type = 'info') => {
 
 .btn-delete:hover {
   background-color: #c82333;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s, box-shadow 0.2s;
+  padding: 20px;
+  margin-bottom: 20px;
 }
 
 .empty-state {
@@ -391,7 +539,6 @@ const showGlobalMessage = (message, type = 'info') => {
   animation: spin 1s linear infinite;
 }
 
-/* 全局消息 */
 .global-message {
   position: fixed;
   top: 20px;
@@ -444,12 +591,32 @@ const showGlobalMessage = (message, type = 'info') => {
   to { transform: translateX(0); }
 }
 
-/* 图标样式 - 可以使用实际图标库如Font Awesome */
-.icon-reset::before { content: "↻"; }
+.icon-back::before { content: "←"; }
+.icon-refresh::before { content: "🔄"; }
 .icon-edit::before { content: "✎"; }
 .icon-save::before { content: "✓"; }
 .icon-delete::before { content: "✕"; }
 .icon-empty::before { content: "☹"; }
-.icon-refresh::before { content: "🔄"; }
-.icon-logout::before { content: "🚪"; }
+
+@media (max-width: 768px) {
+  .admin-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .header-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .user-table th, .user-table td {
+    padding: 12px;
+  }
+
+  .actions-col {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
 </style>

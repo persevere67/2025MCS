@@ -1,185 +1,201 @@
 <template>
-  <div class="admin-container">
-    <div class="admin-header">
-      <div class="header-left">
-        <h1 class="admin-title">问答系统管理后台</h1>
-        <p class="admin-subtitle">管理问答数据记录</p>
-      </div>
-      
-      <!-- 右侧用户信息和操作区域 -->
-      <div class="header-right">
-        <div class="user-info" v-if="userInfo">
-          <span class="user-avatar">👤</span>
-          <div class="user-details">
-            <span class="username">{{ userInfo.username }}</span>
-            <span class="user-role">{{ userInfo.role || 'ADMIN' }}</span>
-          </div>
+  <div class="admin-page">
+    <div class="admin-container">
+      <div class="admin-header">
+        <div class="header-left">
+          <h1 class="admin-title">问答系统管理后台</h1>
+          <p class="admin-subtitle">管理问答数据记录</p>
         </div>
         
-        <div class="header-actions">
-          <button @click="refreshData" class="action-btn refresh-btn" :disabled="loading">
-            <i class="icon-refresh"></i>
-            {{ loading ? '刷新中...' : '刷新数据' }}
-          </button>
+        <!-- 右侧用户信息和操作区域 -->
+        <div class="header-right">
+          <div class="user-info" v-if="userInfo">
+            <span class="user-avatar">👤</span>
+            <div class="user-details">
+              <span class="username">{{ userInfo.username }}</span>
+              <span class="user-role">{{ userInfo.role || 'ADMIN' }}</span>
+            </div>
+          </div>
           
-          <button @click="logout" class="action-btn logout-btn">
-            <i class="icon-logout"></i> 退出登录
+          <div class="header-actions">
+            <button @click="refreshData" class="action-btn refresh-btn" :disabled="loading">
+              <i class="icon-refresh"></i>
+              {{ loading ? '刷新中...' : '刷新数据' }}
+            </button>
+            
+            <button @click="logout" class="action-btn logout-btn">
+              <i class="icon-logout"></i> 退出登录
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 搜索区域：新增双搜索框 -->
+      <div class="search-section card">
+        <!-- 用户搜索框 -->
+        <div class="search-input-group">
+          <input 
+            v-model="userSearchKeyword" 
+            placeholder="输入用户名或邮箱搜索用户..." 
+            @input="filterUserList"
+            class="search-input"
+          />
+          <button @click="resetUserSearch" class="btn btn-secondary">
+            <i class="icon-reset"></i> 重置用户搜索
+          </button>
+        </div>
+        
+        <!-- 问答搜索框 -->
+        <div class="search-input-group" style="margin-top: 10px;">
+          <input 
+            v-model="qaSearchKeyword" 
+            placeholder="输入问题或答案关键词搜索..." 
+            @input="filterQAList"
+            class="search-input"
+          />
+          <button @click="resetQASearch" class="btn btn-secondary">
+            <i class="icon-reset"></i> 重置问答搜索
           </button>
         </div>
       </div>
-    </div>
 
-    <!-- 搜索区域：新增双搜索框 -->
-    <div class="search-section card">
-      <!-- 用户搜索框 -->
-      <div class="search-input-group">
-        <input 
-          v-model="userSearchKeyword" 
-          placeholder="输入用户名或邮箱搜索用户..." 
-          @input="filterUserList"
-          class="search-input"
-        />
-        <button @click="resetUserSearch" class="btn btn-secondary">
-          <i class="icon-reset"></i> 重置用户搜索
-        </button>
-      </div>
-      
-      <!-- 问答搜索框 -->
-      <div class="search-input-group" style="margin-top: 10px;">
-        <input 
-          v-model="qaSearchKeyword" 
-          placeholder="输入问题或答案关键词搜索..." 
-          @input="filterQAList"
-          class="search-input"
-        />
-        <button @click="resetQASearch" class="btn btn-secondary">
-          <i class="icon-reset"></i> 重置问答搜索
-        </button>
-      </div>
-    </div>
-
-    <!-- 用户列表部分 -->
-    <div class="user-list-section card">
-      <h2><i class="icon-user">⭐</i>用户列表</h2>
-      <div class="user-display">
-        <span class="user-count">{{ filteredUserList.length }}</span>
-        <div class="username-tags">
-          <span v-for="user in userList" :key="user.id" class="username-tag">
-            {{ user.username }}
-          </span>
+      <!-- 用户列表部分 -->
+      <div class="user-list-section card">
+        <h2><i class="icon-user">⭐</i>用户列表</h2>
+        <div class="user-display">
+          <span class="user-count">{{ filteredUserList.length }}</span>
+          <div class="username-tags">
+            <span v-for="user in userList" :key="user.id" class="username-tag">
+              {{ user.username }}
+            </span>
+          </div>
         </div>
+
+        <div class="table-container"></div>
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th class="id-col">用户ID</th>
+                <th class="username-col">用户名</th>
+                <th class="email-col">邮箱</th>
+                <th class="actions-col">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="user in filteredUserList" :key="user.id" class="user-row">
+                <td class="id-col">
+                  <span class="user-id-badge">{{ user.id }}</span>
+                </td>
+                <td class="name-col">
+                  <div class="username-wrapper">
+                    <span class="user-avatar">{{ user.username.charAt(0).toUpperCase() }}</span>
+                    <span class="username">{{ user.username }}</span>
+                  </div>
+                </td>
+                <td class="email-col">
+                  <a :href="'mailto:${user.email}'" class="email-link">{{ user.email }}</a>
+                </td>
+                <td class="actions-col">
+                  <button @click="goToUserHistory(user.id)" class="btn btn-view">
+                    <i class="icon-history"></i> 历史记录
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div class="table-container"></div>
-        <table class="user-table">
-          <thead>
-            <tr>
-              <th class="id-col">用户ID</th>
-              <th class="username-col">用户名</th>
-              <th class="email-col">邮箱</th>
-              <th class="actions-col">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="user in filteredUserList" :key="user.id" class="user-row">
-              <td class="id-col">
-                <span class="user-id-badge">{{ user.id }}</span>
-              </td>
-              <td class="name-col">
-                <div class="username-wrapper">
-                  <span class="user-avatar">{{ user.username.charAt(0).toUpperCase() }}</span>
-                  <span class="username">{{ user.username }}</span>
-                </div>
-              </td>
-              <td class="email-col">
-                <a :href="'mailto:${user.email}'" class="email-link">{{ user.email }}</a>
-              </td>
-              <td class="actions-col">
-                <button @click="goToUserHistory(user.id)" class="btn btn-view">
-                  <i class="icon-history"></i> 历史记录
-                </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <!-- 用户问答历史部分 -->
+      <div class="user-question-history-section card " v-if="userQuestionHistory.length > 0">
+        <h2><i class="icon-history">🕒</i>用户问答历史</h2>
+        
+        <div class="user-display">
+          <span class="user-count">{{ filteredQAList.length }}</span>
+        </div>
 
-    <!-- 用户问答历史部分 -->
-    <div class="user-question-history-section card" v-if="userQuestionHistory.length > 0">
-      <h2>用户问答历史</h2>
-      <table class="qa-table">
-        <thead>
-          <tr>
-            <th>问题ID</th>
-            <th>所属用户</th>
-            <th>问题</th>
-            <th>答案</th>
-            <th width="180">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in filteredQAList" :key="item.id">
-            <td>{{ item.id }}</td>
-            <td>{{ getUserById(item.userId)?.username || '未知用户' }}</td>
-            <td>
-              <input 
-                v-if="editId === item.id" 
-                v-model="editQuestion" 
-                class="edit-input"
-              />
-              <span v-else>{{ item.question }}</span>
-            </td>
-            <td>
-              <input 
-                v-if="editId === item.id" 
-                v-model="editAnswer" 
-                class="edit-input"
-              />
-              <span v-else>{{ item.answer }}</span>
-            </td>
-            <td class="actions">
-              <button 
-                v-if="editId !== item.id" 
-                @click="editRecord(item)" 
-                class="btn btn-edit"
-              >
-                <i class="icon-edit"></i> 编辑
-              </button>
-              <button 
-                v-if="editId === item.id" 
-                @click="saveRecord(item)" 
-                class="btn btn-save"
-              >
-                <i class="icon-save"></i> 保存
-              </button>
-              <button 
-                @click="deleteRecord(item.id)" 
-                class="btn btn-delete"
-              >
-                <i class="icon-delete"></i> 删除
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+        <div class="table-container">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th class="id-col">ID</th>
+                <th class="username-col">所属用户</th>
+                <th class="question-col">问题</th>
+                <th class="answer-col">答案</th>
+                <th class="actions-col">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in filteredQAList" :key="item.id" class="user-row">
+                <td class="id-col">
+                  <span class="user-id-badge">{{ item.id }}</span>
+                </td>
+                <td class="username-col">
+                  <div class="username-wrapper">
+                    <span class="user-avatar">{{ getUserById(item.userId)?.username.charAt(0).toUpperCase() || '?' }}</span>
+                    <span class="username">{{ getUserById(item.userId)?.username || '未知用户' }}</span>
+                  </div>
+                </td>
+                <td class="question-col">
+                  <input 
+                    v-if="editId === item.id" 
+                    v-model="editQuestion" 
+                    class="edit-input"
+                  />
+                  <span v-else>{{ item.question }}</span>
+                </td>
+                <td class="answer-col">
+                  <input 
+                    v-if="editId === item.id" 
+                    v-model="editAnswer" 
+                    class="edit-input"
+                  />
+                  <span v-else>{{ item.answer }}</span>
+                </td>
+                <td class="actions-col">
+                  <button 
+                    v-if="editId !== item.id" 
+                    @click="editRecord(item)" 
+                    class="btn btn-edit"
+                  >
+                    <i class="icon-edit"></i> 编辑
+                  </button>
+                  <button 
+                    v-if="editId === item.id" 
+                    @click="saveRecord(item)" 
+                    class="btn btn-save"
+                  >
+                    <i class="icon-save"></i> 保存
+                  </button>
+                  <button 
+                    @click="deleteRecord(item.id)" 
+                    class="btn btn-delete"
+                  >
+                    <i class="icon-delete"></i> 删除
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-    <!-- 空状态 -->
-    <div v-if="(filteredUserList.length === 0 && userQuestionHistory.length === 0)" class="empty-state">
-      <i class="icon-empty"></i>
-      <p>暂无数据</p>
-    </div>
+      <!-- 空状态 -->
+      <div v-if="filteredUserList.length === 0 && !loading" class="empty-state">
+        <i class="icon-empty">☹</i>
+        <p>暂无用户数据</p>
+      </div>
 
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading-overlay">
-      <div class="loading-spinner"></div>
-    </div>
+      <!-- 加载状态 -->
+      <div v-if="loading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+      </div>
 
-    <!-- 全局提示组件 -->
-    <div v-if="globalMessage" class="global-message" :class="globalMessageType">
-      <span>{{ globalMessage }}</span>
-      <button @click="globalMessage = ''" class="close-btn">✕</button>
+      <!-- 全局提示组件 -->
+      <div v-if="globalMessage" class="global-message" :class="globalMessageType">
+        <span>{{ globalMessage }}</span>
+        <button @click="globalMessage = ''" class="close-btn">✕</button>
+      </div>
     </div>
 </template>
 
@@ -462,33 +478,32 @@ const showGlobalMessage = (message, type = 'info') => {
 </script>
 
 <style scoped>
+.admin-page {
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+  background-image: url('@/assets/bj5.jpg');
+  background-size: cover;
+  background-position: relative;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height: 100vh;
+  padding: 20px;
+}
+
 .admin-container {
   position: relative;
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.8);
   border-radius: 12px;
-  z-index: 1;
+  z-index: 100;
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #333;
+  overflow: hidden;
 }
 
-.admin-container::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url('https://images.unsplash.com/photo-1576091160550-2173dba999ef');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  opacity: 0.2; /* 降低不透明度避免干扰内容 */
-  z-index: -1;
-}
 
 .admin-header {
   margin-bottom: 30px;
@@ -630,8 +645,7 @@ const showGlobalMessage = (message, type = 'info') => {
   background-color: #f7fafc;
   text-align: left;
   position: sticky;
-  top: 0;
-  z-index: 10;
+  top: 0;;
 }
 
 .user-table td {
@@ -732,6 +746,39 @@ const showGlobalMessage = (message, type = 'info') => {
   transform: translateY(-1px);
 }
 
+.user-question-history-section {
+  position: relative;
+  z-index: 10;
+  background-color: rgba(255, 255, 255, 0.7);
+  border: 1px solid #e2e8f0;
+  isolation: isolate; /* 创建新的堆叠上下文 */
+}
+
+.question-col {
+  min-width: 250px;
+}
+
+.answer-col {
+  min-width: 250px;
+}
+
+/* 编辑输入框样式 */
+.edit-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: #fff;
+}
+
+/* 操作按钮组样式 */
+.actions-col {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
 .card {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
@@ -816,6 +863,7 @@ const showGlobalMessage = (message, type = 'info') => {
 
 .btn {
   display: inline-flex;
+  position: relative;
   align-items: center;
   justify-content: center;
   padding: 8px 12px;
