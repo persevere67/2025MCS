@@ -21,10 +21,6 @@ public interface AdminService {
      */
     void deleteUser(Long userId);
 
-    /**
-     * 更新用户信息
-     */
-    User updateUser(Long userId, UpdateUserRequest request);
 
     /**
      * 获取所有用户信息

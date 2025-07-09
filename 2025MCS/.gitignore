@@ -1,0 +1,20 @@
+epoch_3/
+RAG/data/final_medical_knowledge.faiss
+RAG/data/final_medical_sentences.pkl
+# Python bytecode files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+
+# IDE-specific files
+.idea/
+.vscode/
+
+# OS generated files
+.DS_Store
+Thumbs.db

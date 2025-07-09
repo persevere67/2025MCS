@@ -31,28 +31,24 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final QuestionAnswerRepository questionAnswerRepository;
     private final UserService userService;
-    // 定义缺失的常量
-    private static final String QUESTION_ANSWER_NOT_FOUND = "未找到问答记录";
+
     @Override
     public User addUser(RegisterRequest request) {
+        // 修正：根据 UserService 的实际方法名，通常是 register 而不是 registerNewUser
         return userService.register(request);
     }
 
     @Override
     public void deleteUser(Long userId) {
         // 删除关联记录
-        questionAnswerRepository.deleteByUserId(userId);
+        // 修正：调用 deleteByUser_Id
+        questionAnswerRepository.deleteByUser_Id(userId);
 
         // 删除用户
         User user = userRepository.findById(userId)
-               .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         userRepository.delete(user);
         log.info("用户 {} (ID: {}) 已删除", user.getUsername(), user.getId());
-    }
-
-    @Override
-    public User updateUser(Long userId, UpdateUserRequest request) {
-        return userService.updateUser(userId, request);
     }
 
     @Override
@@ -65,10 +61,9 @@ public class AdminServiceImpl implements AdminService {
     @Transactional(readOnly = true)
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
-               .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
-    // 确保方法签名与接口完全一致
     @Override
     @Transactional(readOnly = true)
     public Page<QuestionAnswerDto> getUserQuestionHistory(Long userId, Pageable pageable) {
@@ -76,17 +71,17 @@ public class AdminServiceImpl implements AdminService {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
 
-        User user = userRepository.getReferenceById(userId);
-        Page<QuestionAnswer> questionAnswerPage = questionAnswerRepository.findByUserOrderByCreateAtDesc(user, pageable);
+        // 修正：调用 findByUser_IdOrderByCreateAtDesc
+        Page<QuestionAnswer> questionAnswerPage = questionAnswerRepository.findByUser_IdOrderByCreateAtDesc(userId, pageable);
 
         List<QuestionAnswerDto> questionAnswerDtos = questionAnswerPage.getContent().stream()
-               .map(qa -> QuestionAnswerDto.builder()
-                       .id(qa.getId())
-                       .question(qa.getQuestion())
-                       .answer(qa.getAnswer())
-                       .createAt(qa.getCreateAt())
-                       .build())
-               .collect(Collectors.toList());
+                .map(qa -> QuestionAnswerDto.builder()
+                        .id(qa.getId())
+                        .question(qa.getQuestion())
+                        .answer(qa.getAnswer())
+                        .createAt(qa.getCreateAt())
+                        .build())
+                .collect(Collectors.toList());
 
         return new PageImpl<>(questionAnswerDtos, pageable, questionAnswerPage.getTotalElements());
     }
@@ -94,7 +89,7 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public QuestionAnswer updateQuestionAnswer(Long id, QuestionAnswerDto request) {
         QuestionAnswer questionAnswer = questionAnswerRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.QUESTION_ANSWER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.QUESTION_ANSWER_NOT_FOUND)); // 使用 ErrorCode 枚举
         questionAnswer.setQuestion(request.getQuestion());
         questionAnswer.setAnswer(request.getAnswer());
         return questionAnswerRepository.save(questionAnswer);
@@ -102,6 +97,10 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public void deleteQuestionAnswer(Long id) {
+        // 检查记录是否存在，并抛出业务异常
+        if (!questionAnswerRepository.existsById(id)) {
+            throw new BusinessException(ErrorCode.QUESTION_ANSWER_NOT_FOUND);
+        }
         questionAnswerRepository.deleteById(id);
         log.info("问答记录 {} 已删除", id);
     }
@@ -109,17 +108,16 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional(readOnly = true)
     public Page<QuestionAnswerDto> getAllQuestionAnswers(Pageable pageable) {
-        // 按创建时间倒序查询所有问答记录
+        // 修正：调用 findAllByOrderByCreateAtDesc
         Page<QuestionAnswer> questionAnswerPage = questionAnswerRepository.findAllByOrderByCreateAtDesc(pageable);
         
-        // 转换为DTO并包含用户ID
+        // 转换为DTO并包含用户ID (从 QuestionAnswer 实体通过 User 关联获取 ID)
         return questionAnswerPage.map(qa -> QuestionAnswerDto.builder()
                 .id(qa.getId())
-                .userId(qa.getUser().getId())  // 新增用户ID字段
+                .userId(qa.getUser().getId()) // 修正：从 qa.getUser().getId() 获取用户ID
                 .question(qa.getQuestion())
                 .answer(qa.getAnswer())
                 .createAt(qa.getCreateAt())
                 .build());
     }
-
 }
