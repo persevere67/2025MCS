@@ -82,7 +82,7 @@ class RAGSystem:
     # 【Prompt Engineering Upgrade】: generate_stream method, upgraded Prompt and history handling
     async def generate_stream(self, query: str, context: str, history: List[Dict[str, str]]):
         if self.status != "READY":
-            yield json.dumps({"token": "LLM client not initialized"})
+            yield json.dumps({"token": "LLM client not initialized"},ensure_ascii=False)
             return
 
         formatted_history = "\n".join([f"用户问：{h['question']}\n你答：{h['answer']}" for h in history])
@@ -123,17 +123,17 @@ class RAGSystem:
                 content = chunk.choices[0].delta.content
                 if content:
                     # 【SSE Format】: Wrap each text chunk into SSE event format
-                    yield json.dumps({"token": content})
+                    yield json.dumps({"token": content},ensure_ascii=False)
         except Exception as e:
             print(f"LLM generation error: {e}")
-            yield json.dumps({"token": f"\n\n[Error calling AI to generate answer: {e}]"})
+            yield json.dumps({"token": f"\n\n[Error calling AI to generate answer: {e}]"},ensure_ascii=False)
 
     # 【Prompt Engineering Upgrade】: answer_stream method, handles history and numbered context
     async def answer_stream(self, query: str, history: List[Dict[str, str]]):
         print(f"Processing query: '{query}' (contains {len(history)} history entries)")
         retrieved_context_list = self.retrieve(query)
         context_str = "\n".join([f"【来源{i+1}】: {fact}" for i, fact in enumerate(retrieved_context_list)])
-        yield f"event: retrieval_complete\ndata: {json.dumps({'count': len(retrieved_context_list)})}\n\n"
+        yield f"event: retrieval_complete\ndata: {json.dumps({'count': len(retrieved_context_list)},ensure_ascii=False)}\n\n"
         async for chunk in self.generate_stream(query, context_str, history):
             yield f"data: {chunk}\n\n"
         yield "event: end\ndata: {}\n\n"
