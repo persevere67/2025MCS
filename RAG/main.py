@@ -1,4 +1,4 @@
-# main.py
+# E:\2025MCS\RAG\main.py
 
 import os
 import json
@@ -14,8 +14,8 @@ from openai import OpenAI
 import asyncio
 from typing import List, Dict
 
-# --- Import FastAPI-related libraries ---
-from fastapi import FastAPI, HTTPException, Depends, Header
+# --- 导入FastAPI相关的库 ---
+from fastapi import FastAPI, HTTPException, Request, Response, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 # 【核心升级】: Import sse-starlette for standard SSE streaming
@@ -172,14 +172,14 @@ def startup_event():
         rag_system = RAGSystem(CONFIG)
 
 # --- 7. API Endpoint Definition (Upgraded to support history and SSE) ---
-@app.post("/api/question/ask", dependencies=[Depends(verify_token)])
+@app.post("/api/qa/ask", dependencies=[Depends(verify_token)])
 async def ask_question(query: Query):
     if not rag_system or rag_system.status != "READY":
         raise HTTPException(status_code=503, detail="RAG system not ready.")
     return EventSourceResponse(rag_system.answer_stream(query.question, query.history))
 
 # --- Other Placeholder API Endpoints (Kept unchanged) ---
-@app.get("/api/health/check")
+@app.get("/health")
 def health_check():
     return {"success": True, "data": {"pythonService": rag_system.status if rag_system else "NOT_INITIALIZED"}}
 
