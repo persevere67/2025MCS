@@ -73,7 +73,6 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 允许所有来源，生产环境应限制为特定域名，例如：Arrays.asList("http://localhost:5173", "https://your-frontend-domain.com")
         configuration.setAllowedOriginPatterns(Arrays.asList("*")); 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 允许的HTTP方法
         configuration.setAllowedHeaders(Arrays.asList("*")); // 允许所有请求头
